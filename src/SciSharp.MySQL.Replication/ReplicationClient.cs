@@ -44,6 +44,14 @@ namespace SciSharp.MySQL.Replication
 
             try
             {
+                var cmd = mysqlConn.CreateCommand();
+                cmd.CommandText = "SET @master_binlog_checksum='@@global.binlog_checksum'";
+                await cmd.ExecuteNonQueryAsync();
+
+                cmd = mysqlConn.CreateCommand();
+                cmd.CommandText = "SET @mariadb_slave_capability='" + LogEvent.MARIA_SLAVE_CAPABILITY_MINE + "'";
+                await cmd.ExecuteNonQueryAsync();
+
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
                 _connection = mysqlConn;
                 return new LoginResult { Result = true };
