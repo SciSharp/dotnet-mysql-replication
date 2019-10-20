@@ -3,10 +3,9 @@ using Xunit;
 
 namespace Test
 {
-    public class MainTest : TestBase
+    public class MainTest
     {
         public MainTest()
-            : base()
         {
 
         }
