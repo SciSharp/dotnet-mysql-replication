@@ -6,6 +6,7 @@ using MySql.Data.MySqlClient;
 using System.Reflection;
 using System.Buffers.Binary;
 using SuperSocket.Channel;
+using Microsoft.Extensions.Logging;
 
 namespace SciSharp.MySQL.Replication
 {
@@ -18,6 +19,15 @@ namespace SciSharp.MySQL.Replication
         private MySqlConnection _connection;
         private Stream _stream;
         private PipeChannel<LogEvent> _pipeChannel;
+        private ILogger _logger;
+
+        public ReplicationClient()
+        {
+            using (var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole()))
+            {
+                _logger = loggerFactory.CreateLogger<ReplicationClient>();
+            }
+        }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
         {
@@ -60,12 +70,7 @@ namespace SciSharp.MySQL.Replication
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
 
-                _pipeChannel = new StreamPipeChannel<LogEvent>(_stream, new LogEventPipelineFilter(), new ChannelOptions
-                {
-                    
-                });
-
-                await StartDumpBinlog(serverId, fileName);
+                await StartDumpBinlog(_stream, serverId, fileName);
 
                 _connection = mysqlConn;
                 return new LoginResult { Result = true };
@@ -116,16 +121,21 @@ namespace SciSharp.MySQL.Replication
             return new Memory<byte>(buffer, 0, len);
         }
 
-        private async ValueTask StartDumpBinlog(int serverId, string fileName)
+        private async ValueTask StartDumpBinlog(Stream stream, int serverId, string fileName)
         {
-            var writer = (_pipeChannel as IPipeChannel).Out.Writer;
-            await writer.WriteAsync(GetDumpBinlogCommand(serverId, fileName));
-            await writer.FlushAsync();
+            var data = GetDumpBinlogCommand(serverId, fileName);
+            await stream.WriteAsync(data);
+            await stream.FlushAsync();
         }
 
         public IAsyncEnumerable<LogEvent> FetchEvents()
         {
-            throw new NotImplementedException();
+            _pipeChannel = new StreamPipeChannel<LogEvent>(_stream, new LogEventPipelineFilter(), new ChannelOptions
+                {
+                    Logger = _logger
+                });
+
+            return _pipeChannel.RunAsync();
         }
     }
 }
