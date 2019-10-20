@@ -60,7 +60,7 @@ namespace SciSharp.MySQL.Replication
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
 
-                _pipeChannel = new StreamPipeChannel<LogEvent>(_stream, null, new ChannelOptions
+                _pipeChannel = new StreamPipeChannel<LogEvent>(_stream, new LogEventPipelineFilter(), new ChannelOptions
                 {
                     
                 });
