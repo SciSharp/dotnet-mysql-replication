@@ -9,5 +9,7 @@ namespace SciSharp.MySQL.Replication
         Task<LoginResult> ConnectAsync(string server, string username, string password, int serverId, string fileName);
 
         IAsyncEnumerable<LogEvent> FetchEvents();
+
+        ValueTask CloseAsync();
     }
 }

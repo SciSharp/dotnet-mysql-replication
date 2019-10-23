@@ -149,5 +149,11 @@ namespace SciSharp.MySQL.Replication
 
             return _pipeChannel.RunAsync();
         }
+
+        public async ValueTask CloseAsync()
+        {
+            await _connection.CloseAsync();
+            _connection = null;
+        }
     }
 }
