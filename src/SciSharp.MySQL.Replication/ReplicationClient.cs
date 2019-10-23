@@ -37,8 +37,8 @@ namespace SciSharp.MySQL.Replication
                     LogEventType.XID_EVENT,
                     LogEventType.DELETE_ROWS_EVENT_V0,
                     LogEventType.UPDATE_ROWS_EVENT_V0,
-                    LogEventType.WRITE_ROWS_EVENTv0,
-                    LogEventType.HEARTBEAT_EVENT);
+                    LogEventType.WRITE_ROWS_EVENT_V0,
+                    LogEventType.HEARTBEAT_LOG_EVENT);
         }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)

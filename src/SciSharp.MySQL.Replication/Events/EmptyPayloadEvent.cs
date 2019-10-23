@@ -10,7 +10,7 @@ namespace SciSharp.MySQL.Replication
             EventType = eventType;
         }
 
-        protected override void DecodeBody(ref SequenceReader<byte> reader)
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader)
         {
 
         }
@@ -22,7 +22,7 @@ namespace SciSharp.MySQL.Replication
 
         public EmptyPayloadEventFactory(LogEventType eventType)
         {
-            EventTyp = eventType;
+            EventType = eventType;
         }
 
         public LogEvent Create()
