@@ -4,27 +4,25 @@ using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication
 {
+    /*
+    https://dev.mysql.com/doc/internals/en/binlog-event.html
+    https://dev.mysql.com/doc/internals/en/binlog-event-header.html
+    */
     public class LogEventPipelineFilter : FixedHeaderPipelineFilter<LogEvent>
     {
         public LogEventPipelineFilter()
-            : base(4)
+            : base(19)
         {
             Decoder = new LogEventPackageDecoder();
         }
 
         protected override int GetBodyLengthFromHeader(ReadOnlySequence<byte> buffer)
         {
-            var pos = 0;
-            var len = 0;
-
-            foreach (var piece in buffer)
-            {
-                for (var i = 0; i < piece.Length && pos < 3; i++)
-                {
-                    len = len | ((0xff & piece.Span[i]) << (pos * 8));
-                    pos++;
-                }
-            }
+            var reader = new SequenceReader<byte>(buffer);            
+            reader.Advance(9);
+            
+            if (!reader.TryReadBigEndian(out int len))
+                throw new Exception("No enought data to read");
 
             return len;
         }

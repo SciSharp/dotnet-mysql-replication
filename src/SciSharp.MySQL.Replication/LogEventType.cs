@@ -5,7 +5,7 @@ namespace SciSharp.MySQL.Replication
     /*
     /* https://dev.mysql.com/doc/internals/en/binlog-event-type.html
     */
-    public enum LogEventType : int
+    public enum LogEventType : byte
     {
         UNKNOWN_EVENT= 0, 
         START_EVENT_V3= 1, 

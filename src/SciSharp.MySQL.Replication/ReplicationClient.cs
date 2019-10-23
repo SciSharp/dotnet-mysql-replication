@@ -27,6 +27,18 @@ namespace SciSharp.MySQL.Replication
             {
                 _logger = loggerFactory.CreateLogger<ReplicationClient>();
             }
+
+            LogEventPackageDecoder.RegisterEmptyPayloadEventTypes(
+                    LogEventType.STOP_EVENT,
+                    LogEventType.INTVAR_EVENT,
+                    LogEventType.SLAVE_EVENT,
+                    LogEventType.RAND_EVENT,
+                    LogEventType.USER_VAR_EVENT,
+                    LogEventType.XID_EVENT,
+                    LogEventType.DELETE_ROWS_EVENT_V0,
+                    LogEventType.UPDATE_ROWS_EVENT_V0,
+                    LogEventType.WRITE_ROWS_EVENTv0,
+                    LogEventType.HEARTBEAT_EVENT);
         }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
