@@ -9,6 +9,8 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: scisharp
+    ports:
+      - 33060:3306
     volumes:
     - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
 

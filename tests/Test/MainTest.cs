@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using SciSharp.MySQL.Replication;
 using Xunit;
 
 namespace Test
@@ -11,9 +13,15 @@ namespace Test
         }
         
         [Fact]
-        public void Test1()
+        public async Task TestConnection()
         {
+            var client = new ReplicationClient();
 
+            var result = await client.ConnectAsync("localhost", "root", "scisharp", 1, "000.log");
+            
+            Assert.True(result.Result);
+
+            await client.CloseAsync();
         }
     }
 }
