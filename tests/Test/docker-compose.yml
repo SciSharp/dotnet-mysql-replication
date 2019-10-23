@@ -12,7 +12,8 @@ services:
     ports:
       - 3306:3306
     volumes:
-    - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    command: ["mysqld", "--log-bin=mysql-bin", "--server-id=1"]
 
   adminer:
     image: adminer

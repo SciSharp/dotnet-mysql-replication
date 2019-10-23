@@ -17,7 +17,7 @@ namespace Test
         {
             var client = new ReplicationClient();
 
-            var result = await client.ConnectAsync("localhost", "root", "scisharp", 1, "000.log");
+            var result = await client.ConnectAsync("localhost", "root", "scisharp", 1, "mysql-bin.log");
             
             Assert.True(result.Result);
 
