@@ -19,7 +19,7 @@ namespace Test
 
             var result = await client.ConnectAsync("localhost", "root", "scisharp", 1, "mysql-bin.log");
             
-            Assert.True(result.Result);
+            Assert.True(result.Result, result.Message);
 
             await client.CloseAsync();
         }

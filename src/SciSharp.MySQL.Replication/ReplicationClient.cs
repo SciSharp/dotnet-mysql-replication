@@ -72,6 +72,7 @@ namespace SciSharp.MySQL.Replication
 
             try
             {
+                /* 
                 var cmd = mysqlConn.CreateCommand();
                 cmd.CommandText = "SET @master_binlog_checksum='@@global.binlog_checksum'";
                 await cmd.ExecuteNonQueryAsync();
@@ -79,6 +80,7 @@ namespace SciSharp.MySQL.Replication
                 cmd = mysqlConn.CreateCommand();
                 cmd.CommandText = "SET @mariadb_slave_capability='" + LogEvent.MARIA_SLAVE_CAPABILITY_MINE + "'";
                 await cmd.ExecuteNonQueryAsync();
+                */
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
 
@@ -122,7 +124,7 @@ namespace SciSharp.MySQL.Replication
             n = n.Slice(2);
             BinaryPrimitives.WriteInt32LittleEndian(n, serverId);
 
-            var nameSpan = n.Slice(fixPartSize);
+            var nameSpan = n.Slice(4);
 
             var len = encoding.GetBytes(fileName, nameSpan);
 
