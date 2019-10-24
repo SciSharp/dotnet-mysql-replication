@@ -129,7 +129,7 @@ namespace SciSharp.MySQL.Replication
             len += fixPartSize;
 
             // end of the file name
-            buffer[len++] = '\0';
+            buffer[len++] = 0x00;
             
             return new Memory<byte>(buffer, 0, len);
         }
@@ -153,8 +153,13 @@ namespace SciSharp.MySQL.Replication
 
         public async ValueTask CloseAsync()
         {
-            await _connection.CloseAsync();
-            _connection = null;
+            var connection = _connection;
+
+            if (connection != null)
+            {
+                _connection = null;
+                await connection.CloseAsync();
+            }            
         }
     }
 }
