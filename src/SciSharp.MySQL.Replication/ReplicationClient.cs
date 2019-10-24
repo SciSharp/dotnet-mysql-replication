@@ -12,7 +12,7 @@ namespace SciSharp.MySQL.Replication
 {
     public class ReplicationClient : IReplicationClient
     {
-        private const byte CMD_DUMP_BINLOG = 18;
+        private const byte CMD_DUMP_BINLOG = 0x12;
         private const int BIN_LOG_HEADER_SIZE = 4;
         private const int BINLOG_DUMP_NON_BLOCK = 1;
         private const int BINLOG_SEND_ANNOTATE_ROWS_EVENT = 2;
@@ -99,11 +99,14 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /*
+        https://dev.mysql.com/doc/internals/en/com-binlog-dump.html
+        */
         private Memory<byte> GetDumpBinlogCommand(int serverId, string fileName)
         {
             var fixPartSize = 11;
             var encoding = System.Text.Encoding.ASCII;
-            var buffer = new byte[fixPartSize + encoding.GetByteCount(fileName)];
+            var buffer = new byte[fixPartSize + encoding.GetByteCount(fileName) + 1];
 
             Span<byte> span = buffer;
 
@@ -125,11 +128,9 @@ namespace SciSharp.MySQL.Replication
 
             len += fixPartSize;
 
-             // What's this part?
-            buffer[0] = (byte) (len & 0xff);
-            buffer[1] = (byte) (len >> 8);
-            buffer[2] = (byte) (len >> 16);
-
+            // end of the file name
+            buffer[len++] = '\0';
+            
             return new Memory<byte>(buffer, 0, len);
         }
 
