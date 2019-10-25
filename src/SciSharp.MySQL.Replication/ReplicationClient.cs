@@ -115,14 +115,14 @@ namespace SciSharp.MySQL.Replication
             span[0] = CMD_DUMP_BINLOG;
 
             var n = span.Slice(1);
-            BinaryPrimitives.WriteInt32LittleEndian(n, BIN_LOG_HEADER_SIZE);
+            BinaryPrimitives.WriteInt32BigEndian(n, BIN_LOG_HEADER_SIZE);
 
             var flags = (short) (BINLOG_DUMP_NON_BLOCK | BINLOG_SEND_ANNOTATE_ROWS_EVENT);
             n = n.Slice(4);
-            BinaryPrimitives.WriteInt16LittleEndian(n, flags);
+            BinaryPrimitives.WriteInt16BigEndian(n, flags);
 
             n = n.Slice(2);
-            BinaryPrimitives.WriteInt32LittleEndian(n, serverId);
+            BinaryPrimitives.WriteInt32BigEndian(n, serverId);
 
             var nameSpan = n.Slice(4);
 
