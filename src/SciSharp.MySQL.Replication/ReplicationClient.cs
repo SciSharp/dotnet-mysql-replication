@@ -72,19 +72,11 @@ namespace SciSharp.MySQL.Replication
 
             try
             {
-                /* 
-                var cmd = mysqlConn.CreateCommand();
-                cmd.CommandText = "SET @master_binlog_checksum='@@global.binlog_checksum'";
-                await cmd.ExecuteNonQueryAsync();
-
-                cmd = mysqlConn.CreateCommand();
-                cmd.CommandText = "SET @mariadb_slave_capability='" + LogEvent.MARIA_SLAVE_CAPABILITY_MINE + "'";
-                await cmd.ExecuteNonQueryAsync();
-                */
+                var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn);                
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
 
-                await StartDumpBinlog(_stream, serverId, fileName);
+                await StartDumpBinlog(_stream, serverId, binlogInfo.Item1, binlogInfo.Item2);
 
                 _connection = mysqlConn;
                 return new LoginResult { Result = true };
@@ -101,10 +93,30 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        //https://dev.mysql.com/doc/refman/5.6/en/replication-howto-masterstatus.html
+        private async Task<Tuple<string, int>> GetBinlogFileNameAndPosition(MySqlConnection mysqlConn)
+        {
+            var cmd = mysqlConn.CreateCommand();
+            cmd.CommandText = "SHOW MASTER STATUS;";
+            
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                if (!await reader.ReadAsync())
+                    throw new Exception("No binlog information has been returned.");
+
+                var fileName = reader.GetString(0);
+                var position = reader.GetInt32(1);
+
+                await reader.CloseAsync();
+
+                return new Tuple<string, int>(fileName, position);
+            }
+        }
+
         /*
         https://dev.mysql.com/doc/internals/en/com-binlog-dump.html
         */
-        private Memory<byte> GetDumpBinlogCommand(int serverId, string fileName)
+        private Memory<byte> GetDumpBinlogCommand(int serverId, string fileName, int position)
         {
             var fixPartSize = 11;
             var encoding = System.Text.Encoding.ASCII;
@@ -115,7 +127,7 @@ namespace SciSharp.MySQL.Replication
             span[0] = CMD_DUMP_BINLOG;
 
             var n = span.Slice(1);
-            BinaryPrimitives.WriteInt32BigEndian(n, BIN_LOG_HEADER_SIZE);
+            BinaryPrimitives.WriteInt32BigEndian(n, position);
 
             var flags = (short) (BINLOG_DUMP_NON_BLOCK | BINLOG_SEND_ANNOTATE_ROWS_EVENT);
             n = n.Slice(4);
@@ -136,9 +148,9 @@ namespace SciSharp.MySQL.Replication
             return new Memory<byte>(buffer, 0, len);
         }
 
-        private async ValueTask StartDumpBinlog(Stream stream, int serverId, string fileName)
+        private async ValueTask StartDumpBinlog(Stream stream, int serverId, string fileName, int position)
         {
-            var data = GetDumpBinlogCommand(serverId, fileName);
+            var data = GetDumpBinlogCommand(serverId, fileName, position);
             await stream.WriteAsync(data);
             await stream.FlushAsync();
         }
