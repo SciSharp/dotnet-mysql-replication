@@ -55,9 +55,19 @@ namespace SciSharp.MySQL.Replication
         {
             var reader = new SequenceReader<byte>(buffer);
 
-            reader.Advance(5); // 3 + 1 + 1
+            reader.Advance(4); // 3 + 1
 
-            reader.TryReadBigEndian(out int seconds);
+            // ok byte
+            reader.TryRead(out byte ok);
+
+            if (ok == 0xFF)
+            {
+                var errorLogEvent = new ErrorLogEvent();
+                errorLogEvent.DecodeBody(ref reader);
+                return errorLogEvent;
+            }
+
+            reader.TryReadLittleEndian(out int seconds);
             var timestamp = _unixEpoch.AddSeconds(seconds);
 
             reader.TryRead(out byte eventTypeValue);
@@ -68,15 +78,15 @@ namespace SciSharp.MySQL.Replication
             log.Timestamp = timestamp;
             log.EventType = eventType;
 
-            reader.TryReadBigEndian(out int serverID);
+            reader.TryReadLittleEndian(out int serverID);
             log.ServerID = serverID;
 
             reader.Advance(4); // skip event size
 
-            reader.TryReadBigEndian(out int position);
+            reader.TryReadLittleEndian(out int position);
             log.Position = position;
             
-            reader.TryReadBigEndian(out short flags);
+            reader.TryReadLittleEndian(out short flags);
             log.Flags = (LogEventFlag)flags;
 
             log.DecodeBody(ref reader);
