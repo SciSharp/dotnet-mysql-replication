@@ -118,23 +118,23 @@ namespace SciSharp.MySQL.Replication
         */
         private Memory<byte> GetDumpBinlogCommand(int serverId, string fileName, int position)
         {
-            var fixPartSize = 11;
+            var fixPartSize = 15;
             var encoding = System.Text.Encoding.ASCII;
             var buffer = new byte[fixPartSize + encoding.GetByteCount(fileName) + 1];
 
             Span<byte> span = buffer;
 
-            span[0] = CMD_DUMP_BINLOG;
+            buffer[4] = CMD_DUMP_BINLOG;
 
-            var n = span.Slice(1);
-            BinaryPrimitives.WriteInt32BigEndian(n, position);
+            var n = span.Slice(5);
+            BinaryPrimitives.WriteInt32LittleEndian(n, position);
 
             var flags = (short) (BINLOG_DUMP_NON_BLOCK | BINLOG_SEND_ANNOTATE_ROWS_EVENT);
             n = n.Slice(4);
-            BinaryPrimitives.WriteInt16BigEndian(n, flags);
+            BinaryPrimitives.WriteInt16LittleEndian(n, flags);
 
             n = n.Slice(2);
-            BinaryPrimitives.WriteInt32BigEndian(n, serverId);
+            BinaryPrimitives.WriteInt32LittleEndian(n, serverId);
 
             var nameSpan = n.Slice(4);
 
@@ -144,6 +144,12 @@ namespace SciSharp.MySQL.Replication
 
             // end of the file name
             buffer[len++] = 0x00;
+
+            var contentLen = len - 4;
+
+            buffer[0] = (byte) (contentLen & 0xff);
+            buffer[1] = (byte) (contentLen >> 8);
+            buffer[2] = (byte) (contentLen >> 16);
             
             return new Memory<byte>(buffer, 0, len);
         }
