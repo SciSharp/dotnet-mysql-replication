@@ -24,7 +24,7 @@ namespace SciSharp.MySQL.Replication
             reader.TryRead(out byte byte1);
             reader.TryRead(out byte byte2);
 
-            var len = byte2 * 256 * 256 + byte1 * 256 + byte0 + 4;
+            var len = byte2 * 256 * 256 + byte1 * 256 + byte0 + 4 + 1;
             return len;
         }
     }
