@@ -39,6 +39,8 @@ namespace SciSharp.MySQL.Replication
                     LogEventType.UPDATE_ROWS_EVENT_V0,
                     LogEventType.WRITE_ROWS_EVENT_V0,
                     LogEventType.HEARTBEAT_LOG_EVENT);
+                    
+            LogEventPackageDecoder.RegisterLogEventType<RotateLogEvent>(LogEventType.ROTATE_EVENT);
         }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
