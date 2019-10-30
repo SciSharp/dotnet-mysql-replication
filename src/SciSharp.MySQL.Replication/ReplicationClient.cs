@@ -39,7 +39,7 @@ namespace SciSharp.MySQL.Replication
                     LogEventType.UPDATE_ROWS_EVENT_V0,
                     LogEventType.WRITE_ROWS_EVENT_V0,
                     LogEventType.HEARTBEAT_LOG_EVENT);
-                    
+
             LogEventPackageDecoder.RegisterLogEventType<RotateLogEvent>(LogEventType.ROTATE_EVENT);
         }
 
@@ -74,7 +74,11 @@ namespace SciSharp.MySQL.Replication
 
             try
             {
-                var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn);                
+                var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn);
+
+                var binlogChecksum = await GetBinlogChecksum(mysqlConn);
+
+                LogEvent.ChecksumType = binlogChecksum;       
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
 
@@ -112,6 +116,23 @@ namespace SciSharp.MySQL.Replication
                 await reader.CloseAsync();
 
                 return new Tuple<string, int>(fileName, position);
+            }
+        }
+
+        private async Task<ChecksumType> GetBinlogChecksum(MySqlConnection mysqlConn)
+        {
+            var cmd = mysqlConn.CreateCommand();
+            cmd.CommandText = "show global variables like 'binlog_checksum';";
+            
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                if (!await reader.ReadAsync())
+                    return ChecksumType.NONE;
+
+                var checksumTypeName = reader.GetString(1).ToUpper();
+                await reader.CloseAsync();
+
+                return (ChecksumType)Enum.Parse(typeof(ChecksumType), checksumTypeName);
             }
         }
 
