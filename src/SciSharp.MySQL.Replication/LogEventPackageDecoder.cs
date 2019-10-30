@@ -81,7 +81,8 @@ namespace SciSharp.MySQL.Replication
             reader.TryReadLittleEndian(out int serverID);
             log.ServerID = serverID;
 
-            reader.Advance(4); // skip event size
+            reader.TryReadLittleEndian(out int eventSize);
+            log.EventSize = eventSize;
 
             reader.TryReadLittleEndian(out int position);
             log.Position = position;

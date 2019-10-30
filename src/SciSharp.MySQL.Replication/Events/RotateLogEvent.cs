@@ -19,10 +19,10 @@ namespace SciSharp.MySQL.Replication
             reader.TryReadLittleEndian(out long position);
             RotatePosition = position;
 
-            reader.TryReadTo(out ReadOnlySequence<byte> sequence, 0x00, false);
-            NextBinlogFileName = sequence.GetString(Encoding.UTF8);
+            var binglogFileNameSize = reader.Remaining - (int)LogEvent.ChecksumType;
 
-            reader.Advance(1);
+            NextBinlogFileName = reader.Sequence.Slice(reader.Position.GetInteger(), binglogFileNameSize).GetString(Encoding.UTF8);
+            reader.Advance(binglogFileNameSize);
         }
     }
 }
