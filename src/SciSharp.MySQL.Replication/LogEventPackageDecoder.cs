@@ -22,6 +22,11 @@ namespace SciSharp.MySQL.Replication
 
         private static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1);
 
+        internal static DateTime GetTimestapmFromUnixEpoch(int seconds)
+        {
+            return _unixEpoch.AddSeconds(seconds);
+        }
+
         private static Dictionary<LogEventType, ILogEventFactory> _logEventFactories = new Dictionary<LogEventType, ILogEventFactory>();
 
         internal static void RegisterLogEventType<TLogEvent>(LogEventType eventType)
@@ -62,13 +67,13 @@ namespace SciSharp.MySQL.Replication
 
             if (ok == 0xFF)
             {
-                var errorLogEvent = new ErrorLogEvent();
+                var errorLogEvent = new ErrorEvent();
                 errorLogEvent.DecodeBody(ref reader);
                 return errorLogEvent;
             }
 
             reader.TryReadLittleEndian(out int seconds);
-            var timestamp = _unixEpoch.AddSeconds(seconds);
+            var timestamp = GetTimestapmFromUnixEpoch(seconds);
 
             reader.TryRead(out byte eventTypeValue);
             var eventType = (LogEventType)eventTypeValue;
