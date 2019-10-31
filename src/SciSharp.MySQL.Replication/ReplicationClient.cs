@@ -40,7 +40,8 @@ namespace SciSharp.MySQL.Replication
                     LogEventType.WRITE_ROWS_EVENT_V0,
                     LogEventType.HEARTBEAT_LOG_EVENT);
 
-            LogEventPackageDecoder.RegisterLogEventType<RotateLogEvent>(LogEventType.ROTATE_EVENT);
+            LogEventPackageDecoder.RegisterLogEventType<RotateEvent>(LogEventType.ROTATE_EVENT);
+            LogEventPackageDecoder.RegisterLogEventType<FormatDescriptionEvent>(LogEventType.FORMAT_DESCRIPTION_EVENT);         
         }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
@@ -76,8 +77,9 @@ namespace SciSharp.MySQL.Replication
             {
                 var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn);
 
-                //var binlogChecksum = await GetBinlogChecksum(mysqlConn);
-                //LogEvent.ChecksumType = binlogChecksum;       
+                var binlogChecksum = await GetBinlogChecksum(mysqlConn);
+                await ConfirmChecksum(mysqlConn);
+                LogEvent.ChecksumType = binlogChecksum;
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
 
@@ -134,6 +136,16 @@ namespace SciSharp.MySQL.Replication
                 return (ChecksumType)Enum.Parse(typeof(ChecksumType), checksumTypeName);
             }
         }
+
+
+        
+        private async ValueTask ConfirmChecksum(MySqlConnection mysqlConn)
+        {
+            var cmd = mysqlConn.CreateCommand();
+            cmd.CommandText = "set @`master_binlog_checksum` = @@binlog_checksum;";        
+            await cmd.ExecuteNonQueryAsync();
+        }
+        
 
         /*
         https://dev.mysql.com/doc/internals/en/com-binlog-dump.html
