@@ -21,11 +21,11 @@ namespace SciSharp.MySQL.Replication
             if (checkValue == '#')
             {
                 reader.Advance(1);
-                SqlState = reader.Sequence.Slice(reader.Position.GetInteger(), 5).GetString(Encoding.UTF8);
+                SqlState = reader.Sequence.Slice(reader.Consumed, 5).GetString(Encoding.UTF8);
                 reader.Advance(5);
             }
 
-            ErrorMessage = reader.Sequence.Slice(reader.Position.GetInteger()).GetString(Encoding.UTF8);
+            ErrorMessage = reader.Sequence.Slice(reader.Consumed).GetString(Encoding.UTF8);
         }
     }
 }

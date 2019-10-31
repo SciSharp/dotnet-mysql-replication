@@ -76,9 +76,8 @@ namespace SciSharp.MySQL.Replication
             {
                 var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn);
 
-                var binlogChecksum = await GetBinlogChecksum(mysqlConn);
-
-                LogEvent.ChecksumType = binlogChecksum;       
+                //var binlogChecksum = await GetBinlogChecksum(mysqlConn);
+                //LogEvent.ChecksumType = binlogChecksum;       
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
 

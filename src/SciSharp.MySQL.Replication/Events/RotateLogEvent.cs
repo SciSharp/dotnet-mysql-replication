@@ -21,7 +21,7 @@ namespace SciSharp.MySQL.Replication
 
             var binglogFileNameSize = reader.Remaining - (int)LogEvent.ChecksumType;
 
-            NextBinlogFileName = reader.Sequence.Slice(reader.Position.GetInteger(), binglogFileNameSize).GetString(Encoding.UTF8);
+            NextBinlogFileName = reader.Sequence.Slice(reader.Consumed, binglogFileNameSize).GetString(Encoding.UTF8);
             reader.Advance(binglogFileNameSize);
         }
     }
