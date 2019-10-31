@@ -5,7 +5,7 @@ using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication
 {
-    public sealed class ErrorLogEvent : LogEvent
+    public sealed class ErrorEvent : LogEvent
     {
         public short ErrorCode { get; private set; }
         public string SqlState { get; private set; }

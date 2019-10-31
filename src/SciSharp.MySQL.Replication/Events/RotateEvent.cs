@@ -8,7 +8,7 @@ namespace SciSharp.MySQL.Replication
     /// <summary>
     /// https://dev.mysql.com/doc/internals/en/rotate-event.html
     /// </summary>
-    public sealed class RotateLogEvent : LogEvent
+    public sealed class RotateEvent : LogEvent
     {
         public long RotatePosition { get; set; }
 
