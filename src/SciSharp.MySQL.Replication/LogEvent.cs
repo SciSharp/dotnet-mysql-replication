@@ -7,7 +7,7 @@ namespace SciSharp.MySQL.Replication
     {
         public static ChecksumType ChecksumType { get; internal set; }        
         public DateTime Timestamp { get; set; }
-        public LogEventType EventType { get; set; }
+        public LogEventType EventType { get; internal set; }
         public int ServerID { get; set; }
         public int EventSize { get; set; }
         public int Position { get; set; }

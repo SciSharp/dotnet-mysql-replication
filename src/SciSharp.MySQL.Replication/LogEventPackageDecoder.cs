@@ -11,14 +11,6 @@ namespace SciSharp.MySQL.Replication
     */
     class LogEventPackageDecoder : IPackageDecoder<LogEvent>
     {
-        class DefaultLogEventFactory<TLogEvent> : ILogEventFactory
-            where TLogEvent : LogEvent, new()
-        {
-            public LogEvent Create()
-            {
-                return new TLogEvent();
-            }
-        }
 
         private static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1);
 
@@ -28,11 +20,11 @@ namespace SciSharp.MySQL.Replication
         }
 
         private static Dictionary<LogEventType, ILogEventFactory> _logEventFactories = new Dictionary<LogEventType, ILogEventFactory>();
-
+        private static ILogEventFactory _notImplementedEventFactory = new DefaultEventFactory<NotImplementedEvent>();
         internal static void RegisterLogEventType<TLogEvent>(LogEventType eventType)
             where TLogEvent : LogEvent, new()
         {
-            RegisterLogEventType(eventType, new DefaultLogEventFactory<TLogEvent>());
+            RegisterLogEventType(eventType, new DefaultEventFactory<TLogEvent>());
         }
 
         internal static void RegisterLogEventType(LogEventType eventType, ILogEventFactory factory)
@@ -44,16 +36,18 @@ namespace SciSharp.MySQL.Replication
         {
             foreach (var eventType in eventTypes)
             {
-                _logEventFactories.Add(eventType, new EmptyPayloadEventFactory(eventType));
+                _logEventFactories.Add(eventType, new DefaultEventFactory<EmptyPayloadEvent>());
             }
         }
 
         protected virtual LogEvent CreateLogEvent(LogEventType eventType)
         {
             if (!_logEventFactories.TryGetValue(eventType, out var factory))
-                throw new Exception("Unexpected eventType: " + eventType);
+                factory = _notImplementedEventFactory;
 
-            return factory.Create();
+            var log = factory.Create();
+            log.EventType = eventType;
+            return log;
         }
 
         public LogEvent Decode(ReadOnlySequence<byte> buffer)
