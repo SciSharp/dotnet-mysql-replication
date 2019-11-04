@@ -34,14 +34,15 @@ namespace SciSharp.MySQL.Replication
                     LogEventType.SLAVE_EVENT,
                     LogEventType.RAND_EVENT,
                     LogEventType.USER_VAR_EVENT,
-                    LogEventType.XID_EVENT,
                     LogEventType.DELETE_ROWS_EVENT_V0,
                     LogEventType.UPDATE_ROWS_EVENT_V0,
                     LogEventType.WRITE_ROWS_EVENT_V0,
-                    LogEventType.HEARTBEAT_LOG_EVENT);
+                    LogEventType.HEARTBEAT_LOG_EVENT,
+                    LogEventType.ANONYMOUS_GTID_LOG_EVENT);
 
             LogEventPackageDecoder.RegisterLogEventType<RotateEvent>(LogEventType.ROTATE_EVENT);
-            LogEventPackageDecoder.RegisterLogEventType<FormatDescriptionEvent>(LogEventType.FORMAT_DESCRIPTION_EVENT);         
+            LogEventPackageDecoder.RegisterLogEventType<FormatDescriptionEvent>(LogEventType.FORMAT_DESCRIPTION_EVENT);
+            LogEventPackageDecoder.RegisterLogEventType<QueryEvent>(LogEventType.QUERY_EVENT);      
         }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
@@ -163,7 +164,7 @@ namespace SciSharp.MySQL.Replication
             var n = span.Slice(5);
             BinaryPrimitives.WriteInt32LittleEndian(n, position);
 
-            var flags = (short) BINLOG_SEND_ANNOTATE_ROWS_EVENT;
+            var flags = (short)0;
             n = n.Slice(4);
             BinaryPrimitives.WriteInt16LittleEndian(n, flags);
 
