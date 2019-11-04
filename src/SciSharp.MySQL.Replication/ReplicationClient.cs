@@ -163,7 +163,7 @@ namespace SciSharp.MySQL.Replication
             var n = span.Slice(5);
             BinaryPrimitives.WriteInt32LittleEndian(n, position);
 
-            var flags = (short) (BINLOG_DUMP_NON_BLOCK | BINLOG_SEND_ANNOTATE_ROWS_EVENT);
+            var flags = (short) BINLOG_SEND_ANNOTATE_ROWS_EVENT;
             n = n.Slice(4);
             BinaryPrimitives.WriteInt16LittleEndian(n, flags);
 
