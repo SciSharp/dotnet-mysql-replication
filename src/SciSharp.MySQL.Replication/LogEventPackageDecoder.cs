@@ -12,13 +12,6 @@ namespace SciSharp.MySQL.Replication
     class LogEventPackageDecoder : IPackageDecoder<LogEvent>
     {
 
-        private static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1);
-
-        internal static DateTime GetTimestapmFromUnixEpoch(int seconds)
-        {
-            return _unixEpoch.AddSeconds(seconds);
-        }
-
         private static Dictionary<LogEventType, ILogEventFactory> _logEventFactories = new Dictionary<LogEventType, ILogEventFactory>();
         private static ILogEventFactory _notImplementedEventFactory = new DefaultEventFactory<NotImplementedEvent>();
         internal static void RegisterLogEventType<TLogEvent>(LogEventType eventType)
@@ -67,7 +60,7 @@ namespace SciSharp.MySQL.Replication
             }
 
             reader.TryReadLittleEndian(out int seconds);
-            var timestamp = GetTimestapmFromUnixEpoch(seconds);
+            var timestamp = LogEvent.GetTimestapmFromUnixEpoch(seconds);
 
             reader.TryRead(out byte eventTypeValue);
             var eventType = (LogEventType)eventTypeValue;

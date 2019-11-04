@@ -15,5 +15,12 @@ namespace SciSharp.MySQL.Replication
         protected internal abstract void DecodeBody(ref SequenceReader<byte> reader);
         public const int MARIA_SLAVE_CAPABILITY_GTID = 4;
         public const int MARIA_SLAVE_CAPABILITY_MINE = MARIA_SLAVE_CAPABILITY_GTID;
+
+        private static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1);
+
+        internal static DateTime GetTimestapmFromUnixEpoch(int seconds)
+        {
+            return _unixEpoch.AddSeconds(seconds);
+        }
     }
 }
