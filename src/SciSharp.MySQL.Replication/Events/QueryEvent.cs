@@ -40,10 +40,7 @@ namespace SciSharp.MySQL.Replication
 
             reader.Advance(1); //0x00
 
-            if (reader.TryReadTo(out ReadOnlySequence<byte> seq, 0x00, false))
-                Query = seq.GetString(Encoding.UTF8);
-            else
-                Query = reader.Sequence.Slice(reader.Consumed).GetString(Encoding.UTF8);
+            Query = ReadString(ref reader);
         }
     }
 }

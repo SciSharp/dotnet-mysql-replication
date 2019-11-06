@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
+using System.Text;
+using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication
 {
@@ -14,6 +17,82 @@ namespace SciSharp.MySQL.Replication
         public LogEventFlag Flags { get; set; }
         protected internal abstract void DecodeBody(ref SequenceReader<byte> reader);
 
+        protected BitArray ReadBitmap(ref SequenceReader<byte> reader, int length)
+        {
+            var dataLen = (length + 7) / 8;
+            var array = new BitArray(length, false);
+            var j = 0;
+
+            for (var i = 0; i < dataLen; i++)
+            {
+                reader.TryRead(out byte b);
+                
+                if ((b & (0x01 << (j % 8))) != 0x00)
+                    array[j] = true;
+            }
+
+            return array;
+        }
+
+        protected string ReadString(ref SequenceReader<byte> reader)
+        {
+            return ReadString(ref reader, out long length);
+        }
+
+        protected string ReadString(ref SequenceReader<byte> reader, out long length)
+        {
+            if (reader.TryReadTo(out ReadOnlySequence<byte> seq, 0x00, false))
+            {
+                length = seq.Length + 1;
+                var result = seq.GetString(Encoding.UTF8);
+                reader.Advance(1);
+                return result;
+            }
+            else
+            {
+                length = reader.Remaining;
+                seq = reader.Sequence;
+                seq = seq.Slice(reader.Consumed);
+                var result = seq.GetString(Encoding.UTF8);
+                reader.Advance(length);
+                return result;
+            }
+        }
+        
+        protected string ReadString(ref SequenceReader<byte> reader, int length = 0)
+        {
+            if (length == 0 || reader.Remaining <= length)
+                return ReadString(ref reader);
+
+            // reader.Remaining > length
+            var seq = reader.Sequence.Slice(reader.Consumed, length);            
+            var consumed = 0L;
+            
+            try
+            {
+                var subReader = new SequenceReader<byte>(seq);
+                return ReadString(ref subReader, out consumed);
+            }
+            finally
+            {
+                reader.Advance(consumed);
+            }
+        }
+
+        protected long ReadLong(ref SequenceReader<byte> reader, int length)
+        {
+            var unit = 1;
+            var value = 0L;
+
+            for (var i = 0; i < length; i++)
+            {
+                reader.TryRead(out byte thisValue);
+                value += thisValue * unit;
+                unit *= 256;
+            }
+
+            return value;
+        }
         protected long ReadLengthEncodedInteger(ref SequenceReader<byte> reader)
         {
             reader.TryRead(out byte b0);            
