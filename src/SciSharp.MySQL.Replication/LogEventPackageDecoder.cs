@@ -33,17 +33,17 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
-        protected virtual LogEvent CreateLogEvent(LogEventType eventType)
+        protected virtual LogEvent CreateLogEvent(LogEventType eventType, object context)
         {
             if (!_logEventFactories.TryGetValue(eventType, out var factory))
                 factory = _notImplementedEventFactory;
 
-            var log = factory.Create();
+            var log = factory.Create(context);
             log.EventType = eventType;
             return log;
         }
 
-        public LogEvent Decode(ReadOnlySequence<byte> buffer)
+        public LogEvent Decode(ReadOnlySequence<byte> buffer, object context)
         {
             var reader = new SequenceReader<byte>(buffer);
 
@@ -55,7 +55,7 @@ namespace SciSharp.MySQL.Replication
             if (ok == 0xFF)
             {
                 var errorLogEvent = new ErrorEvent();
-                errorLogEvent.DecodeBody(ref reader);
+                errorLogEvent.DecodeBody(ref reader, context);
                 return errorLogEvent;
             }
 
@@ -65,7 +65,7 @@ namespace SciSharp.MySQL.Replication
             reader.TryRead(out byte eventTypeValue);
             var eventType = (LogEventType)eventTypeValue;
 
-            var log = CreateLogEvent(eventType);
+            var log = CreateLogEvent(eventType, context);
 
             log.Timestamp = timestamp;
             log.EventType = eventType;
@@ -82,7 +82,7 @@ namespace SciSharp.MySQL.Replication
             reader.TryReadLittleEndian(out short flags);
             log.Flags = (LogEventFlag)flags;
 
-            log.DecodeBody(ref reader);
+            log.DecodeBody(ref reader, context);
 
             return log;
         }

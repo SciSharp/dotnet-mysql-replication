@@ -15,7 +15,7 @@ namespace SciSharp.MySQL.Replication
         public string StatusVars { get; private set; }
         public string Schema { get; private set; }
         public String Query { get; private set; }
-        protected internal override void DecodeBody(ref SequenceReader<byte> reader)
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             reader.TryReadLittleEndian(out int slaveProxyID);
             SlaveProxyID = slaveProxyID;

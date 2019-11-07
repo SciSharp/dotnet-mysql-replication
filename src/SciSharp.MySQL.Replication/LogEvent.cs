@@ -15,7 +15,7 @@ namespace SciSharp.MySQL.Replication
         public int EventSize { get; set; }
         public int Position { get; set; }
         public LogEventFlag Flags { get; set; }
-        protected internal abstract void DecodeBody(ref SequenceReader<byte> reader);
+        protected internal abstract void DecodeBody(ref SequenceReader<byte> reader, object context);
 
         protected BitArray ReadBitmap(ref SequenceReader<byte> reader, int length)
         {

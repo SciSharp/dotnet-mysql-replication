@@ -25,7 +25,7 @@ namespace SciSharp.MySQL.Replication
 
         public BitArray NullBitmap { get; set; }
 
-        protected internal override void DecodeBody(ref SequenceReader<byte> reader)
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             TableID = ReadLong(ref reader, 6);
 
@@ -43,6 +43,11 @@ namespace SciSharp.MySQL.Replication
             ColumnMetaDef = ReadString(ref reader, (int)ReadLengthEncodedInteger(ref reader));
             
             NullBitmap = ReadBitmap(ref reader, ColumnCount);
+
+            if (context is ReplicationState repState)
+            {
+                repState.CurrentTableMap = this;
+            }
         }
     }
 }

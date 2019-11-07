@@ -9,7 +9,7 @@ namespace SciSharp.MySQL.Replication
     {
         public long TransactionID { get; set; }
         
-        protected internal override void DecodeBody(ref SequenceReader<byte> reader)
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             reader.TryReadLittleEndian(out long tarnsID);
             TransactionID = tarnsID;

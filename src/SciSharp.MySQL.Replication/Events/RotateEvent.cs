@@ -14,7 +14,7 @@ namespace SciSharp.MySQL.Replication
 
         public string NextBinlogFileName { get; set; }
 
-        protected internal override void DecodeBody(ref SequenceReader<byte> reader)
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             reader.TryReadLittleEndian(out long position);
             RotatePosition = position;

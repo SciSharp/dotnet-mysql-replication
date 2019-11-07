@@ -6,6 +6,6 @@ namespace SciSharp.MySQL.Replication
 {
     interface ILogEventFactory
     {
-        LogEvent Create();
+        LogEvent Create(object context);
     }
 }

@@ -203,6 +203,13 @@ namespace SciSharp.MySQL.Replication
                     Logger = _logger
                 });
 
+            var repState = new ReplicationState();
+            
+            if (_pipeChannel is IPipeChannel pipeChannel)
+            {
+                pipeChannel.PipelineFilter.Context = repState; 
+            }
+
             return _pipeChannel.RunAsync();
         }
 

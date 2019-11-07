@@ -49,7 +49,7 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
-        protected internal override void DecodeBody(ref SequenceReader<byte> reader)
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             reader.TryReadLittleEndian(out short version);
             BinlogVersion = version;

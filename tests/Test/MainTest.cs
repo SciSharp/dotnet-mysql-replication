@@ -3,14 +3,18 @@ using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using SciSharp.MySQL.Replication;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Test
 {
+    [Trait("Category", "Replication")]
     public class MainTest
     {
-        public MainTest()
-        {
+        protected readonly ITestOutputHelper _outputHelper;
 
+        public MainTest(ITestOutputHelper outputHelper)
+        {
+            _outputHelper = outputHelper;
         }
         
         [Fact]
@@ -45,6 +49,7 @@ namespace Test
                 await foreach (var eventLog in client.FetchEvents())
                 {
                     Assert.NotNull(eventLog);
+                    _outputHelper.WriteLine(eventLog.EventType.ToString());
                 }
             }            
 

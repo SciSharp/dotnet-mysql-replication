@@ -10,7 +10,7 @@ namespace SciSharp.MySQL.Replication
         public short ErrorCode { get; private set; }
         public string SqlState { get; private set; }
         public String ErrorMessage { get; private set; }
-        protected internal override void DecodeBody(ref SequenceReader<byte> reader)
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             reader.TryReadLittleEndian(out short errorCode);
 
