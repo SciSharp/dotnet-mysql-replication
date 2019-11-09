@@ -17,10 +17,10 @@ namespace SciSharp.MySQL.Replication
         public LogEventFlag Flags { get; set; }
         protected internal abstract void DecodeBody(ref SequenceReader<byte> reader, object context);
 
-        protected BitArray ReadBitmap(ref SequenceReader<byte> reader, int length)
+        protected BitArray ReadBitmap(ref SequenceReader<byte> reader, int length, bool defaultValue = false)
         {
             var dataLen = (length + 7) / 8;
-            var array = new BitArray(length, false);
+            var array = new BitArray(length, defaultValue);
             var j = 0;
 
             for (var i = 0; i < dataLen; i++)
@@ -36,30 +36,30 @@ namespace SciSharp.MySQL.Replication
 
         protected string ReadString(ref SequenceReader<byte> reader)
         {
-            return ReadString(ref reader, out long length);
+            return ReadString(ref reader, out long consumed);
         }
 
-        protected string ReadString(ref SequenceReader<byte> reader, out long length)
+        protected string ReadString(ref SequenceReader<byte> reader, out long consumed)
         {
             if (reader.TryReadTo(out ReadOnlySequence<byte> seq, 0x00, false))
             {
-                length = seq.Length + 1;
+                consumed = seq.Length + 1;
                 var result = seq.GetString(Encoding.UTF8);
                 reader.Advance(1);
                 return result;
             }
             else
             {
-                length = reader.Remaining;
+                consumed = reader.Remaining;
                 seq = reader.Sequence;
                 seq = seq.Slice(reader.Consumed);
                 var result = seq.GetString(Encoding.UTF8);
-                reader.Advance(length);
+                reader.Advance(consumed);
                 return result;
             }
         }
         
-        protected string ReadString(ref SequenceReader<byte> reader, int length = 0)
+        protected string ReadString(ref SequenceReader<byte> reader, long length = 0)
         {
             if (length == 0 || reader.Remaining <= length)
                 return ReadString(ref reader);
@@ -79,6 +79,7 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+
         protected long ReadLong(ref SequenceReader<byte> reader, int length)
         {
             var unit = 1;
@@ -93,6 +94,13 @@ namespace SciSharp.MySQL.Replication
 
             return value;
         }
+
+        protected string ReadLengthEncodedString(ref SequenceReader<byte> reader)
+        {
+            var len = ReadLengthEncodedInteger(ref reader);
+            return ReadString(ref reader, len);
+        }
+
         protected long ReadLengthEncodedInteger(ref SequenceReader<byte> reader)
         {
             reader.TryRead(out byte b0);            
