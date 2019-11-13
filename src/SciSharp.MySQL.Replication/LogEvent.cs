@@ -15,119 +15,24 @@ namespace SciSharp.MySQL.Replication
         public int EventSize { get; set; }
         public int Position { get; set; }
         public LogEventFlag Flags { get; set; }
+
+        internal static IMySQLDataType[] DataTypes { get; private set; } = new IMySQLDataType[256];
+
+        static LogEvent()
+        {
+            DataTypes[(int)ColumnType.BIT] = new BitType();
+            DataTypes[(int)ColumnType.TINY] = new TinyType();
+            DataTypes[(int)ColumnType.SHORT] = new ShortType();
+            DataTypes[(int)ColumnType.INT24] = new Int24Type();
+            DataTypes[(int)ColumnType.LONG] = new LongType();
+            DataTypes[(int)ColumnType.LONGLONG] = new LongLongType();
+            DataTypes[(int)ColumnType.FLOAT] = new FloatType();
+            DataTypes[(int)ColumnType.DOUBLE] = new DoubleType();
+            DataTypes[(int)ColumnType.NEWDECIMAL] = new NewDecimalType();
+            DataTypes[(int)ColumnType.DATE] = new DateType();
+        }
+
         protected internal abstract void DecodeBody(ref SequenceReader<byte> reader, object context);
-
-        protected BitArray ReadBitmap(ref SequenceReader<byte> reader, int length, bool defaultValue = false)
-        {
-            var dataLen = (length + 7) / 8;
-            var array = new BitArray(length, defaultValue);
-            var j = 0;
-
-            for (var i = 0; i < dataLen; i++)
-            {
-                reader.TryRead(out byte b);
-                
-                if ((b & (0x01 << (j % 8))) != 0x00)
-                    array[j] = true;
-            }
-
-            return array;
-        }
-
-        protected string ReadString(ref SequenceReader<byte> reader)
-        {
-            return ReadString(ref reader, out long consumed);
-        }
-
-        protected string ReadString(ref SequenceReader<byte> reader, out long consumed)
-        {
-            if (reader.TryReadTo(out ReadOnlySequence<byte> seq, 0x00, false))
-            {
-                consumed = seq.Length + 1;
-                var result = seq.GetString(Encoding.UTF8);
-                reader.Advance(1);
-                return result;
-            }
-            else
-            {
-                consumed = reader.Remaining;
-                seq = reader.Sequence;
-                seq = seq.Slice(reader.Consumed);
-                var result = seq.GetString(Encoding.UTF8);
-                reader.Advance(consumed);
-                return result;
-            }
-        }
-        
-        protected string ReadString(ref SequenceReader<byte> reader, long length = 0)
-        {
-            if (length == 0 || reader.Remaining <= length)
-                return ReadString(ref reader);
-
-            // reader.Remaining > length
-            var seq = reader.Sequence.Slice(reader.Consumed, length);            
-            var consumed = 0L;
-            
-            try
-            {
-                var subReader = new SequenceReader<byte>(seq);
-                return ReadString(ref subReader, out consumed);
-            }
-            finally
-            {
-                reader.Advance(consumed);
-            }
-        }
-
-
-        protected long ReadLong(ref SequenceReader<byte> reader, int length)
-        {
-            var unit = 1;
-            var value = 0L;
-
-            for (var i = 0; i < length; i++)
-            {
-                reader.TryRead(out byte thisValue);
-                value += thisValue * unit;
-                unit *= 256;
-            }
-
-            return value;
-        }
-
-        protected string ReadLengthEncodedString(ref SequenceReader<byte> reader)
-        {
-            var len = ReadLengthEncodedInteger(ref reader);
-            return ReadString(ref reader, len);
-        }
-
-        protected long ReadLengthEncodedInteger(ref SequenceReader<byte> reader)
-        {
-            reader.TryRead(out byte b0);            
-
-            if (b0 == 0xFC)
-            {
-                reader.TryReadLittleEndian(out short shortValue);
-                return (long)shortValue;
-            }
-
-            if (b0 == 0xFD)
-            {
-                reader.TryRead(out byte b1);
-                reader.TryRead(out byte b2);
-                reader.TryRead(out byte b3);
-
-                return (long)(b1 + b2 * 256 + b3 * 256 * 256);
-            }
-
-            if (b0 == 0xFE)
-            {
-                reader.TryReadLittleEndian(out long longValue);
-                return longValue;
-            }
-
-            return (long)b0;
-        }
 
         public const int MARIA_SLAVE_CAPABILITY_GTID = 4;
         public const int MARIA_SLAVE_CAPABILITY_MINE = MARIA_SLAVE_CAPABILITY_GTID;

@@ -40,7 +40,7 @@ namespace SciSharp.MySQL.Replication
 
             reader.Advance(1); //0x00
 
-            Query = ReadString(ref reader);
+            Query = reader.ReadString();
         }
     }
 }

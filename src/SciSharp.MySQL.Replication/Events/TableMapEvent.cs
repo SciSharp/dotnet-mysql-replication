@@ -31,26 +31,26 @@ namespace SciSharp.MySQL.Replication
 
         protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
-            TableID = ReadLong(ref reader, 6);
+            TableID = reader.ReadLong(6);
 
             reader.Advance(2); // skip flags
 
             byte len;
             reader.TryRead(out len);
-            SchemaName = ReadString(ref reader, len);
+            SchemaName = reader.ReadString(len);
 
             reader.TryRead(out len);
-            TableName = ReadString(ref reader, len);
+            TableName = reader.ReadString(len);
 
-            ColumnCount = (int)ReadLengthEncodedInteger(ref reader);
+            ColumnCount = (int)reader.ReadLengthEncodedInteger();
             ColumnTypes = reader.Sequence.Slice(reader.Consumed, ColumnCount).ToArray();
             reader.Advance(ColumnCount);
 
-            ReadLengthEncodedInteger(ref reader);
+            reader.ReadLengthEncodedInteger();
 
             ColumnMetadata = ReadColumnMetadata(ref reader, ColumnTypes);
             
-            NullBitmap = ReadBitmap(ref reader, ColumnCount);
+            NullBitmap = reader.ReadBitArray(ColumnCount);
 
             Metadata = ReadTableMetadata(ref reader);
 
@@ -73,12 +73,12 @@ namespace SciSharp.MySQL.Replication
                     case ColumnType.BLOB:
                     case ColumnType.JSON:
                     case ColumnType.GEOMETRY:
-                        columnMetadata[i] = (int)ReadLong(ref reader, 1);
+                        columnMetadata[i] = (int)reader.ReadLong(1);
                         break;
                     case ColumnType.BIT:
                     case ColumnType.VARCHAR:
                     case ColumnType.NEWDECIMAL:
-                        columnMetadata[i] = (int)ReadLong(ref reader, 2);
+                        columnMetadata[i] = (int)reader.ReadLong(2);
                         break;
                     case ColumnType.SET:
                     case ColumnType.ENUM:
@@ -89,7 +89,7 @@ namespace SciSharp.MySQL.Replication
                     case ColumnType.TIME_V2:
                     case ColumnType.DATETIME_V2:
                     case ColumnType.TIMESTAMP_V2:
-                        columnMetadata[i] = (int)ReadLong(ref reader, 1);
+                        columnMetadata[i] = (int)reader.ReadLong(1);
                         break;
                     default:
                         columnMetadata[i] = 0;
@@ -133,7 +133,7 @@ namespace SciSharp.MySQL.Replication
                 switch (fieldType)
                 {
                     case MetadataFieldType.SIGNEDNESS:
-                        metadata.Signedness = ReadBitmap(ref reader, numericColumnCount);
+                        metadata.Signedness = reader.ReadBitArray(numericColumnCount);
                         break;
 
                     case MetadataFieldType.DEFAULT_CHARSET:
@@ -190,12 +190,12 @@ namespace SciSharp.MySQL.Replication
             
             while (reader.TryPeek(out byte top) && top > 0)
             {
-                int valuesCount = (int)ReadLengthEncodedInteger(ref reader);
+                int valuesCount = (int)reader.ReadLengthEncodedInteger();
                 var typeValues = new string[valuesCount];
 
                 for (var i = 0; i < valuesCount; i++)
                 {
-                    typeValues[i] = ReadLengthEncodedString(ref reader);
+                    typeValues[i] = reader.ReadLengthEncodedString();
                 }
 
                 result.Add(typeValues);
@@ -211,7 +211,7 @@ namespace SciSharp.MySQL.Replication
 
             while (reader.TryPeek(out byte top) && top > 0)
             {
-                list.Add(ReadLengthEncodedString(ref reader));
+                list.Add(reader.ReadLengthEncodedString());
             }
 
             reader.Advance(1);
@@ -224,7 +224,7 @@ namespace SciSharp.MySQL.Replication
 
             while (reader.TryPeek(out byte top) && top > 0)
             {
-                charsets.Add((int)ReadLengthEncodedInteger(ref reader));
+                charsets.Add((int)reader.ReadLengthEncodedInteger());
             }
 
             reader.Advance(1);
@@ -237,7 +237,7 @@ namespace SciSharp.MySQL.Replication
 
             while (reader.TryPeek(out byte top) && top > 0)
             {
-                dict[(int)ReadLengthEncodedInteger(ref reader)] = (int)ReadLengthEncodedInteger(ref reader);
+                dict[(int)reader.ReadLengthEncodedInteger()] = (int)reader.ReadLengthEncodedInteger();
             }
 
             reader.Advance(1);
@@ -247,7 +247,7 @@ namespace SciSharp.MySQL.Replication
         private DefaultCharset ReadDefaultCharset(ref SequenceReader<byte> reader)
         {
             var charset = new DefaultCharset();
-            charset.DefaultCharsetCollation = (int)ReadLengthEncodedInteger(ref reader);
+            charset.DefaultCharsetCollation = (int)reader.ReadLengthEncodedInteger();
             
             var dict = ReadIntegerDictionary(ref reader);
 

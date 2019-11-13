@@ -25,7 +25,7 @@ namespace SciSharp.MySQL.Replication
 
         protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
-            TableID = this.ReadLong(ref reader, 6);
+            TableID = reader.ReadLong(6);
 
             reader.TryReadLittleEndian(out short flags);
             WriteRowsFlags = (WriteRowsEventFlags)flags;
@@ -33,7 +33,7 @@ namespace SciSharp.MySQL.Replication
             reader.TryReadLittleEndian(out short extraDataLen);
             reader.Advance(extraDataLen);
 
-            IncludedColumns = ReadBitmap(ref reader, (int)ReadLengthEncodedInteger(ref reader));
+            IncludedColumns = reader.ReadBitArray((int)reader.ReadLengthEncodedInteger());
 
             TableMapEvent tableMap = null;
 
@@ -48,14 +48,13 @@ namespace SciSharp.MySQL.Replication
         {
             var rows = new List<object[]>();
             
-            while (reader.TryPeek(out byte top) && top > 0)
+            while (reader.Remaining > 0)
             {
                 var includedColumns = this.IncludedColumns;
                 var columnCount = GetIncludedColumnCount(includedColumns);
                 rows.Add(ReadRow(ref reader, table, includedColumns, columnCount));
             }
 
-            reader.Advance(1);
             return rows;
         }
 
@@ -75,7 +74,7 @@ namespace SciSharp.MySQL.Replication
         private object[] ReadRow(ref SequenceReader<byte> reader, TableMapEvent table, BitArray includedColumns, int columnCount)
         {
             var cells = new object[columnCount];
-            var nullColumns = ReadBitmap(ref reader, columnCount, true);
+            var nullColumns = reader.ReadBitArray(columnCount, true);
             var columnTypes = table.ColumnTypes;
             var columnMetadata = table.ColumnMetadata;
 
@@ -134,32 +133,12 @@ namespace SciSharp.MySQL.Replication
 
         private object ReadCell(ref SequenceReader<byte> reader, ColumnType columnType, int meta, int length)
         {
-            switch (columnType)
-            {
-                case ColumnType.BIT:
-                    int bitSetLength = (meta >> 8) * 8 + (meta & 0xFF);
-                    return ReadBitmap(ref reader, bitSetLength);
+            var dataType = DataTypes[(int)columnType] as IMySQLDataType;
 
-                case ColumnType.TINY:
-                    return (byte)ReadLong(ref reader, 1);
+            if (dataType == null)
+                throw new NotImplementedException();
 
-                case ColumnType.SHORT:
-                    return (short)ReadLong(ref reader, 2);
-
-                case ColumnType.INT24:
-                    return (int)ReadLong(ref reader, 3);
-
-                case ColumnType.LONG:
-                    return ReadLong(ref reader, 4);
-
-                case ColumnType.LONGLONG:
-                    return ReadLong(ref reader, 8);
-
-                case ColumnType.FLOAT:
-                    return ReadLong(ref reader, 4); // INT to float?
-                default:
-                    throw new NotImplementedException($"The reading for the type {columnType} has not been implemented yet.");
-            }
+            return dataType.ReadValue(ref reader, meta);
         }
     }
 }
