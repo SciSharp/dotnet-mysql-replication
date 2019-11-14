@@ -9,7 +9,8 @@ namespace SciSharp.MySQL.Replication
     {
         public object ReadValue(ref SequenceReader<byte> reader, int meta)
         {
-            throw new NotImplementedException();
+            int bitArrayLength = (meta >> 8) * 8 + (meta & 0xFF);
+            return reader.ReadBitArray(bitArrayLength, false);
         }
     }
 }

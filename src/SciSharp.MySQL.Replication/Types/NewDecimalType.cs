@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Buffers;
+using System.Globalization;
 
 namespace SciSharp.MySQL.Replication
 {
@@ -9,7 +10,7 @@ namespace SciSharp.MySQL.Replication
     {
         public object ReadValue(ref SequenceReader<byte> reader, int meta)
         {
-            throw new NotImplementedException();
+            return decimal.Parse(reader.ReadLengthEncodedString(), CultureInfo.InvariantCulture);
         }
     }
 }

@@ -30,6 +30,8 @@ namespace SciSharp.MySQL.Replication
             DataTypes[(int)ColumnType.DOUBLE] = new DoubleType();
             DataTypes[(int)ColumnType.NEWDECIMAL] = new NewDecimalType();
             DataTypes[(int)ColumnType.DATE] = new DateType();
+            DataTypes[(int)ColumnType.STRING] = new StringType();
+            DataTypes[(int)ColumnType.VARCHAR] = new VarCharType();
         }
 
         protected internal abstract void DecodeBody(ref SequenceReader<byte> reader, object context);

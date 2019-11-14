@@ -9,7 +9,7 @@ namespace SciSharp.MySQL.Replication
     {
         public object ReadValue(ref SequenceReader<byte> reader, int meta)
         {
-            throw new NotImplementedException();
+            return 1900 + reader.ReadInteger(1);
         }
     }
 }
