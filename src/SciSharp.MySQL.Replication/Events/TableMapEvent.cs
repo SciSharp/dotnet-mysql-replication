@@ -227,7 +227,9 @@ namespace SciSharp.MySQL.Replication
                 charsets.Add((int)reader.ReadLengthEncodedInteger());
             }
 
-            reader.Advance(1);
+            if (reader.Remaining > 0)
+                reader.Advance(1);
+                
             return charsets;
         }
 
@@ -240,7 +242,9 @@ namespace SciSharp.MySQL.Replication
                 dict[(int)reader.ReadLengthEncodedInteger()] = (int)reader.ReadLengthEncodedInteger();
             }
 
-            reader.Advance(1);
+            if (reader.Remaining > 0)
+                reader.Advance(1);
+
             return dict;
         }
 
