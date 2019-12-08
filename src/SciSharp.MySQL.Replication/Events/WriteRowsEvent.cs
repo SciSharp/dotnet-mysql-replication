@@ -34,9 +34,11 @@ namespace SciSharp.MySQL.Replication
             WriteRowsFlags = (WriteRowsEventFlags)flags;
 
             reader.TryReadLittleEndian(out short extraDataLen);
-            reader.Advance(extraDataLen);
+            reader.Advance(extraDataLen - 2);
 
-            IncludedColumns = reader.ReadBitArray((int)reader.ReadLengthEncodedInteger());
+            var includecColumnLen = (int)reader.ReadLengthEncodedInteger();
+
+            IncludedColumns = reader.ReadBitArray(includecColumnLen);
 
             TableMapEvent tableMap = null;
 
