@@ -13,14 +13,16 @@ namespace SciSharp.MySQL.Replication
         {
             var dataLen = (length + 7) / 8;
             var array = new BitArray(length, defaultValue);
-            var j = 0;
-
-            for (var i = 0; i < dataLen; i++)
+    
+            for (int i = 0; i < dataLen; i++)
             {
                 reader.TryRead(out byte b);
-                
-                if ((b & (0x01 << (j % 8))) != 0x00)
-                    array[j] = true;
+
+                for (var j = i * 8; j < Math.Min((i + 1) * 8, length); j++)
+                {
+                    if ((b & (0x01 << (j % 8))) != 0x00)
+                        array.Set(j, true);
+                }
             }
 
             return array;
