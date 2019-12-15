@@ -50,6 +50,9 @@ namespace Test
                 {
                     Assert.NotNull(eventLog);
                     _outputHelper.WriteLine(eventLog.EventType.ToString());
+                    
+                    if (eventLog is XIDEvent)
+                        break;
                 }
             }            
 
