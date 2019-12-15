@@ -9,6 +9,55 @@ namespace SciSharp.MySQL.Replication
 {
     public abstract class RowsEvent : LogEvent
     {
+        public RowsEvent()
+        {
+            HasCRC = true;
+        }
+
+        public long TableID { get; protected set; }
+
+        public RowsEventFlags RowsEventFlags { get; protected set; }
+
+        public BitArray IncludedColumns { get; protected set; }
+
+        public List<object[]> Rows { get; protected set; }
+
+        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
+        {
+            TableID = reader.ReadLong(6);
+
+            reader.TryReadLittleEndian(out short flags);
+            RowsEventFlags = (RowsEventFlags)flags;
+
+            reader.TryReadLittleEndian(out short extraDataLen);
+            reader.Advance(extraDataLen - 2);
+
+            ReadIncludedColumns(ref reader);
+
+            TableMapEvent tableMap = null;
+
+            if (context is ReplicationState repState)
+                repState.TableMap.TryGetValue(TableID, out tableMap);
+
+            if (tableMap == null)
+                throw new Exception($"The table's metadata was not found: {TableID}.");
+
+            var columnCount = GetIncludedColumnCount(IncludedColumns);
+            
+            RebuildReaderAsCRC(ref reader);
+            ReadData(ref reader, IncludedColumns, tableMap, columnCount);            
+        }
+
+        protected virtual void ReadIncludedColumns(ref SequenceReader<byte> reader)
+        {
+            IncludedColumns = reader.ReadBitArray((int)reader.ReadLengthEncodedInteger());
+        }
+
+        protected virtual void ReadData(ref SequenceReader<byte> reader, BitArray includedColumns, TableMapEvent tableMap, int columnCount)
+        {
+            Rows = ReadRows(ref reader, tableMap, IncludedColumns, columnCount);
+        }
+
         protected List<object[]> ReadRows(ref SequenceReader<byte> reader, TableMapEvent table, BitArray includedColumns, int columnCount)
         {
             var rows = new List<object[]>();

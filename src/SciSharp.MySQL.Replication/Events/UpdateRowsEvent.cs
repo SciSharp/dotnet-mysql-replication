@@ -9,49 +9,50 @@ namespace SciSharp.MySQL.Replication
 {
     public sealed class UpdateRowsEvent :  RowsEvent
     {
-        public long TableID { get; private set; }
+        public class CellValue
+        {
+            public object OldValue { get; set; }
+
+            public object NewValue { get; set; }
+        }
 
         public BitArray IncludedColumnsBeforeUpdate { get; private set; }
 
-        public BitArray IncludedColumns { get; private set; }
-
-        public List<Tuple<object[], object[]>> Rows { get; private set; }
-
-        protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
+         protected override void ReadIncludedColumns(ref SequenceReader<byte> reader)
         {
-            TableID = reader.ReadLong(6);
-
-            reader.TryReadLittleEndian(out short flags);
-            reader.TryReadLittleEndian(out short extraDataLen);
-            reader.Advance(extraDataLen);
-
             IncludedColumnsBeforeUpdate = reader.ReadBitArray((int)reader.ReadLengthEncodedInteger());
             IncludedColumns = reader.ReadBitArray((int)reader.ReadLengthEncodedInteger());
-
-            TableMapEvent tableMap = null;
-
-            if (context is ReplicationState repState)
-                repState.TableMap.TryGetValue(TableID, out tableMap);
-
-            if (tableMap == null)
-                throw new Exception($"The table's metadata was not found: {TableID}.");    
-
-            Rows = ReadUpdatedRows(ref reader, tableMap, IncludedColumnsBeforeUpdate, IncludedColumns);
         }
 
-        private List<Tuple<object[], object[]>> ReadUpdatedRows(ref SequenceReader<byte> reader, TableMapEvent tableMap, BitArray includedColumnsBeforeUpdate, BitArray includedColumns)
+        protected override void ReadData(ref SequenceReader<byte> reader, BitArray includedColumns, TableMapEvent tableMap, int columnCount)
+        {
+            Rows = ReadUpdatedRows(ref reader, tableMap, IncludedColumnsBeforeUpdate, includedColumns, columnCount);
+        }
+
+        private List<object[]> ReadUpdatedRows(ref SequenceReader<byte> reader, TableMapEvent tableMap, BitArray includedColumnsBeforeUpdate, BitArray includedColumns, int columnCount)
         {
             var columnCountBeforeUpdate = GetIncludedColumnCount(IncludedColumnsBeforeUpdate);
-            var columnCount = GetIncludedColumnCount(IncludedColumns);
 
-            var rows = new List<Tuple<object[], object[]>>();
+            var rows = new List<object[]>();
 
             while (reader.Remaining > 0)
             {
-                rows.Add(Tuple.Create(
-                        ReadRow(ref reader, tableMap, includedColumnsBeforeUpdate, columnCountBeforeUpdate),
-                        ReadRow(ref reader, tableMap, includedColumns, columnCount))
-                    );
+                var oldCellValues = ReadRow(ref reader, tableMap, includedColumnsBeforeUpdate, columnCountBeforeUpdate);
+                var newCellValues = ReadRow(ref reader, tableMap, includedColumnsBeforeUpdate, columnCount);
+
+                var cellCount = Math.Min(oldCellValues.Length, newCellValues.Length);
+                var cells = new object[cellCount];
+
+                for (var i = 0; i < cellCount; i++)
+                {
+                    cells[i] = new CellValue
+                    {
+                        OldValue = oldCellValues[i],
+                        NewValue = newCellValues[i]
+                    };
+                }
+
+                rows.Add(cells);
             }
                         
             return rows;
