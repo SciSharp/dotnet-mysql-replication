@@ -21,13 +21,8 @@ namespace SciSharp.MySQL.Replication
         private PipeChannel<LogEvent> _pipeChannel;
         private ILogger _logger;
 
-        public ReplicationClient()
+        static ReplicationClient()
         {
-            using (var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole()))
-            {
-                _logger = loggerFactory.CreateLogger<ReplicationClient>();
-            }
-
             LogEventPackageDecoder.RegisterEmptyPayloadEventTypes(
                     LogEventType.STOP_EVENT,
                     LogEventType.INTVAR_EVENT,
@@ -47,6 +42,15 @@ namespace SciSharp.MySQL.Replication
             LogEventPackageDecoder.RegisterLogEventType<WriteRowsEvent>(LogEventType.WRITE_ROWS_EVENT);
             LogEventPackageDecoder.RegisterLogEventType<DeleteRowsEvent>(LogEventType.DELETE_ROWS_EVENT);
             LogEventPackageDecoder.RegisterLogEventType<UpdateRowsEvent>(LogEventType.UPDATE_ROWS_EVENT);
+            LogEventPackageDecoder.RegisterLogEventType<XIDEvent>(LogEventType.XID_EVENT);
+        }
+
+        public ReplicationClient()
+        {
+            using (var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole()))
+            {
+                _logger = loggerFactory.CreateLogger<ReplicationClient>();
+            }
         }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
