@@ -53,7 +53,7 @@ namespace SciSharp.MySQL.Replication
             if (!HasCRC || ChecksumType == ChecksumType.NONE)
                 return false;
 
-            reader = new SequenceReader<byte>(reader.Sequence.Slice(reader.Consumed));
+            reader = new SequenceReader<byte>(reader.Sequence.Slice(reader.Consumed, reader.Remaining - (int)ChecksumType));
             return true;
         }
     }
