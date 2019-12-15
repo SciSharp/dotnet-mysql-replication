@@ -45,5 +45,16 @@ namespace SciSharp.MySQL.Replication
         {
             return _unixEpoch.AddSeconds(seconds);
         }
+
+        protected bool HasCRC { get; set; } = false;
+
+        protected bool RebuildReaderAsCRC(ref SequenceReader<byte> reader)
+        {
+            if (!HasCRC || ChecksumType == ChecksumType.NONE)
+                return false;
+
+            reader = new SequenceReader<byte>(reader.Sequence.Slice(reader.Consumed));
+            return true;
+        }
     }
 }

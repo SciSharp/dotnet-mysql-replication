@@ -18,6 +18,11 @@ namespace SciSharp.MySQL.Replication
             RowHasAColumns = 0x08
         }
 
+        public WriteRowsEvent()
+        {
+            HasCRC = true;
+        }
+
         public long TableID { get; private set; }
 
         public WriteRowsEventFlags WriteRowsFlags { get; private set; }
@@ -50,6 +55,8 @@ namespace SciSharp.MySQL.Replication
 
             var columnCount = GetIncludedColumnCount(IncludedColumns);
             
+            RebuildReaderAsCRC(ref reader);
+
             Rows = ReadRows(ref reader, tableMap, IncludedColumns, columnCount);
         }
     }
