@@ -77,7 +77,7 @@ namespace SciSharp.MySQL.Replication
             }
             finally
             {
-                reader.Advance(consumed);
+                reader.Advance(length);
             }
         }
 
