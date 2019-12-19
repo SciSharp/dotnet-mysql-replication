@@ -72,5 +72,10 @@ namespace SciSharp.MySQL.Replication
 
             EventTypeHeaderLengths = eventTypeHeaderLens;            
         }
+
+        public override string ToString()
+        {
+            return $"{EventType.ToString()}\r\nBinlogVersion: {BinlogVersion}\r\nServerVersion: {ServerVersion}";
+        }
     }
 }

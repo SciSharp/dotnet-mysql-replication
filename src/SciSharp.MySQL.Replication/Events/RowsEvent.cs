@@ -22,6 +22,8 @@ namespace SciSharp.MySQL.Replication
 
         public List<object[]> Rows { get; protected set; }
 
+        protected TableMapEvent TableMap { get; private set; }
+
         protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             TableID = reader.ReadLong(6);
@@ -37,7 +39,12 @@ namespace SciSharp.MySQL.Replication
             TableMapEvent tableMap = null;
 
             if (context is ReplicationState repState)
-                repState.TableMap.TryGetValue(TableID, out tableMap);
+            {
+                if (repState.TableMap.TryGetValue(TableID, out tableMap))
+                {
+                    TableMap = tableMap;
+                }
+            }
 
             if (tableMap == null)
                 throw new Exception($"The table's metadata was not found: {TableID}.");
@@ -46,6 +53,30 @@ namespace SciSharp.MySQL.Replication
             
             RebuildReaderAsCRC(ref reader);
             ReadData(ref reader, IncludedColumns, tableMap, columnCount);            
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"{EventType.ToString()}\r\nTableID: {TableID}");
+
+            var columns = IncludedColumns;
+
+            foreach (var row in Rows)
+            {
+                for (int i = 0, j = 0; i < columns.Count; i++)
+                {
+                    if (!columns.Get(i))
+                        continue;
+
+                    var name = TableMap.Metadata.ColumnNames[i];
+                    var value = row[j++];
+                    
+                    sb.Append($"\r\n{name}: {value}");
+                }
+            }
+
+            return sb.ToString();          
         }
 
         protected virtual void ReadIncludedColumns(ref SequenceReader<byte> reader)

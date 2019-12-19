@@ -27,5 +27,10 @@ namespace SciSharp.MySQL.Replication
 
             ErrorMessage = reader.Sequence.Slice(reader.Consumed).GetString(Encoding.UTF8);
         }
+
+        public override string ToString()
+        {
+            return $"{EventType.ToString()}\r\nSqlState: {SqlState}\r\nErrorMessage: {ErrorMessage}";
+        }
     }
 }

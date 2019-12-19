@@ -56,5 +56,10 @@ namespace SciSharp.MySQL.Replication
             reader = new SequenceReader<byte>(reader.Sequence.Slice(reader.Consumed, reader.Remaining - (int)ChecksumType));
             return true;
         }
+
+        public override string ToString()
+        {
+            return EventType.ToString();
+        }
     }
 }

@@ -57,5 +57,29 @@ namespace SciSharp.MySQL.Replication
                         
             return rows;
         }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"{EventType.ToString()}\r\nTableID: {TableID}");
+
+            var columns = IncludedColumns;
+
+            foreach (var row in Rows)
+            {
+                for (int i = 0, j = 0; i < columns.Count; i++)
+                {
+                    if (!columns.Get(i))
+                        continue;
+
+                    var name = TableMap.Metadata.ColumnNames[i];
+                    var value = row[j++] as CellValue;
+
+                    sb.Append($"\r\n{name}: {value.OldValue}=>{value.NewValue}");
+                }
+            }
+
+            return sb.ToString();          
+        }
     }
 }

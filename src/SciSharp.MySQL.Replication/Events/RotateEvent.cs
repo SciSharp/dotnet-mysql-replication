@@ -24,5 +24,10 @@ namespace SciSharp.MySQL.Replication
             NextBinlogFileName = reader.Sequence.Slice(reader.Consumed, binglogFileNameSize).GetString(Encoding.UTF8);
             reader.Advance(binglogFileNameSize);
         }
+
+        public override string ToString()
+        {
+            return $"{EventType.ToString()}\r\nRotatePosition: {RotatePosition}\r\nNextBinlogFileName: {NextBinlogFileName}";
+        }
     }
 }

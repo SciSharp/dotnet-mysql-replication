@@ -60,6 +60,11 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        public override string ToString()
+        {
+            return $"{EventType.ToString()}\r\nTableID: {TableID}\r\nSchemaName: {SchemaName}\r\nTableName: {TableName}\r\nColumnCount: {ColumnCount}";
+        }
+
         private int[] ReadColumnMetadata(ref SequenceReader<byte> reader, byte[] columnTypes)
         {
             var columnMetadata = new int[columnTypes.Length];

@@ -42,5 +42,10 @@ namespace SciSharp.MySQL.Replication
 
             Query = reader.ReadString();
         }
+
+        public override string ToString()
+        {
+            return $"{EventType.ToString()}\r\nSlaveProxyID: {SlaveProxyID}\r\nExecutionTime: {ExecutionTime}\r\nErrorCode: {ErrorCode}\r\nStatusVars: {StatusVars}\r\nSchema: {Schema}\r\nQuery: {Query}";
+        }
     }
 }
