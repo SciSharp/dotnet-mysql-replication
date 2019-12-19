@@ -9,12 +9,16 @@ namespace SciSharp.MySQL.Replication
     {
         public int SlaveProxyID { get; private set; }
         public DateTime ExecutionTime { get; private set; }
-        public byte SchemaLength { get; private set; }
         public short ErrorCode { get; private set; }
-        public short StatusVarsLength { get; private set; }
         public string StatusVars { get; private set; }
         public string Schema { get; private set; }
         public String Query { get; private set; }
+
+        public QueryEvent()
+        {
+            this.HasCRC = true;
+        }
+
         protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             reader.TryReadLittleEndian(out int slaveProxyID);
@@ -24,21 +28,19 @@ namespace SciSharp.MySQL.Replication
             ExecutionTime = LogEvent.GetTimestapmFromUnixEpoch(seconds);
 
             reader.TryRead(out byte schemaLen);
-            SchemaLength = schemaLen;
 
             reader.TryReadLittleEndian(out short errorCode);
             ErrorCode = errorCode;
 
             reader.TryReadLittleEndian(out short statusVarsLen);
-            StatusVarsLength = statusVarsLen;
 
-            StatusVars = reader.Sequence.Slice(reader.Consumed, StatusVarsLength).GetString(Encoding.UTF8);
-            reader.Advance(statusVarsLen);
+            StatusVars = reader.ReadString(Encoding.UTF8, statusVarsLen);
 
-            Schema = reader.Sequence.Slice(reader.Consumed, SchemaLength).GetString(Encoding.UTF8);
-            reader.Advance(schemaLen);
+            Schema = reader.ReadString(Encoding.UTF8, schemaLen);
 
             reader.Advance(1); //0x00
+
+            this.RebuildReaderAsCRC(ref reader);
 
             Query = reader.ReadString();
         }

@@ -39,8 +39,12 @@ namespace SciSharp.MySQL.Replication
             reader.TryRead(out len);
             SchemaName = reader.ReadString(len);
 
+            reader.TryRead(out len);// 0x00
+
             reader.TryRead(out len);
             TableName = reader.ReadString(len);
+
+            reader.TryRead(out len);// 0x00
 
             ColumnCount = (int)reader.ReadLengthEncodedInteger();
             ColumnTypes = reader.Sequence.Slice(reader.Consumed, ColumnCount).ToArray();
