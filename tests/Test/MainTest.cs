@@ -49,7 +49,7 @@ namespace Test
                 await foreach (var eventLog in client.FetchEvents())
                 {
                     Assert.NotNull(eventLog);
-                    _outputHelper.WriteLine(eventLog.ToString());
+                    _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
                     
                     if (eventLog is XIDEvent)
                         break;
