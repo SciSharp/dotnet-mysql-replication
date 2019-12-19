@@ -65,6 +65,8 @@ namespace SciSharp.MySQL.Replication
 
             var columns = IncludedColumns;
 
+            var columnNames = TableMap.Metadata.ColumnNames;
+
             foreach (var row in Rows)
             {
                 for (int i = 0, j = 0; i < columns.Count; i++)
@@ -72,10 +74,13 @@ namespace SciSharp.MySQL.Replication
                     if (!columns.Get(i))
                         continue;
 
-                    var name = TableMap.Metadata.ColumnNames[i];
+                    var name = columnNames?[i];
                     var value = row[j++] as CellValue;
 
-                    sb.Append($"\r\n{name}: {value.OldValue}=>{value.NewValue}");
+                    if (string.IsNullOrEmpty(name))
+                        sb.Append($"\r\n{value.OldValue}=>{value.NewValue}");
+                    else
+                        sb.Append($"\r\n{name}: {value.OldValue}=>{value.NewValue}");
                 }
             }
 
