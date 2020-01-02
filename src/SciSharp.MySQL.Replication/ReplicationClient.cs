@@ -206,7 +206,7 @@ namespace SciSharp.MySQL.Replication
 
         public IAsyncEnumerable<LogEvent> FetchEvents()
         {
-            _pipeChannel = new StreamPipeChannel<LogEvent>(_stream, new LogEventPipelineFilter(), new ChannelOptions
+            _pipeChannel = new StreamPipeChannel<LogEvent>(_stream, null, new LogEventPipelineFilter(), new ChannelOptions
                 {
                     Logger = _logger
                 });
