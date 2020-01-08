@@ -28,6 +28,11 @@ namespace SciSharp.MySQL.Replication
         public BitArray NullBitmap { get; set; }
 
         public TableMetadata Metadata { get; set; }
+        
+        public TableMapEvent()
+        {
+            HasCRC = true;
+        }
 
         protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
@@ -55,6 +60,8 @@ namespace SciSharp.MySQL.Replication
             ColumnMetadata = ReadColumnMetadata(ref reader, ColumnTypes);
             
             NullBitmap = reader.ReadBitArray(ColumnCount);
+
+            RebuildReaderAsCRC(ref reader);
 
             Metadata = ReadTableMetadata(ref reader);
 
@@ -138,59 +145,74 @@ namespace SciSharp.MySQL.Replication
                 reader.TryRead(out byte filedTypeCode);
 
                 var fieldType = (MetadataFieldType)filedTypeCode;
+                var length = reader.ReadLengthEncodedInteger();        
 
-                switch (fieldType)
+                var subReader = new SequenceReader<byte>(reader.Sequence.Slice(reader.Consumed, length));
+                
+                try
                 {
-                    case MetadataFieldType.SIGNEDNESS:
-                        metadata.Signedness = reader.ReadBitArray(numericColumnCount);
-                        break;
-
-                    case MetadataFieldType.DEFAULT_CHARSET:
-                        metadata.DefaultCharset = ReadDefaultCharset(ref reader);
-                        break;
-
-                    case MetadataFieldType.COLUMN_CHARSET:
-                        metadata.ColumnCharsets = ReadIntegers(ref reader);
-                        break;
-
-                    case MetadataFieldType.COLUMN_NAME:
-                        metadata.ColumnNames = ReadStringList(ref reader);
-                        break;
-
-                    case MetadataFieldType.SET_STR_VALUE:
-                        metadata.SetStrValues = ReadTypeValues(ref reader);
-                        break;
-
-                    case MetadataFieldType.ENUM_STR_VALUE:
-                        metadata.EnumStrValues = ReadTypeValues(ref reader);
-                        break;
-
-                    case MetadataFieldType.GEOMETRY_TYPE:
-                        metadata.GeometryTypes = ReadIntegers(ref reader);
-                        break;
-
-                    case MetadataFieldType.SIMPLE_PRIMARY_KEY:
-                        metadata.SimplePrimaryKeys = ReadIntegers(ref reader);
-                        break;
-
-                    case MetadataFieldType.PRIMARY_KEY_WITH_PREFIX:
-                        metadata.PrimaryKeysWithPrefix = ReadIntegerDictionary(ref reader);
-                        break;
-
-                    case MetadataFieldType.ENUM_AND_SET_DEFAULT_CHARSET:
-                        metadata.EnumAndSetDefaultCharset = ReadDefaultCharset(ref reader);
-                        break;
-
-                    case MetadataFieldType.ENUM_AND_SET_COLUMN_CHARSET:
-                        metadata.EnumAndSetColumnCharsets = ReadIntegers(ref reader);
-                        break;
-
-                    default:
-                        throw new Exception("Unsupported table metadata field type: " + fieldType);
+                    ReadMetadataField(ref subReader, fieldType, metadata, numericColumnCount);
+                }
+                finally
+                {
+                    reader.Advance(length);
                 }
             }
 
             return metadata;
+        }
+
+        private void ReadMetadataField(ref SequenceReader<byte> subReader, MetadataFieldType fieldType, TableMetadata metadata, int numericColumnCount)
+        {
+            switch (fieldType)
+            {
+                case MetadataFieldType.SIGNEDNESS:
+                    metadata.Signedness = subReader.ReadBitArray(numericColumnCount);
+                    break;
+
+                case MetadataFieldType.DEFAULT_CHARSET:
+                    metadata.DefaultCharset = ReadDefaultCharset(ref subReader);
+                    break;
+
+                case MetadataFieldType.COLUMN_CHARSET:
+                    metadata.ColumnCharsets = ReadIntegers(ref subReader);
+                    break;
+
+                case MetadataFieldType.COLUMN_NAME:
+                    metadata.ColumnNames = ReadStringList(ref subReader);
+                    break;
+
+                case MetadataFieldType.SET_STR_VALUE:
+                    metadata.SetStrValues = ReadTypeValues(ref subReader);
+                    break;
+
+                case MetadataFieldType.ENUM_STR_VALUE:
+                    metadata.EnumStrValues = ReadTypeValues(ref subReader);
+                    break;
+
+                case MetadataFieldType.GEOMETRY_TYPE:
+                    metadata.GeometryTypes = ReadIntegers(ref subReader);
+                    break;
+
+                case MetadataFieldType.SIMPLE_PRIMARY_KEY:
+                    metadata.SimplePrimaryKeys = ReadIntegers(ref subReader);
+                    break;
+
+                case MetadataFieldType.PRIMARY_KEY_WITH_PREFIX:
+                    metadata.PrimaryKeysWithPrefix = ReadIntegerDictionary(ref subReader);
+                    break;
+
+                case MetadataFieldType.ENUM_AND_SET_DEFAULT_CHARSET:
+                    metadata.EnumAndSetDefaultCharset = ReadDefaultCharset(ref subReader);
+                    break;
+
+                case MetadataFieldType.ENUM_AND_SET_COLUMN_CHARSET:
+                    metadata.EnumAndSetColumnCharsets = ReadIntegers(ref subReader);
+                    break;
+
+                default:
+                    throw new Exception("Unsupported table metadata field type: " + fieldType);
+            }
         }
 
         private List<string[]> ReadTypeValues(ref SequenceReader<byte> reader)

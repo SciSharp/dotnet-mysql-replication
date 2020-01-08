@@ -18,10 +18,11 @@ namespace SciSharp.MySQL.Replication
 
         public BitArray IncludedColumnsBeforeUpdate { get; private set; }
 
-         protected override void ReadIncludedColumns(ref SequenceReader<byte> reader)
+        protected override void ReadIncludedColumns(ref SequenceReader<byte> reader)
         {
-            IncludedColumnsBeforeUpdate = reader.ReadBitArray((int)reader.ReadLengthEncodedInteger());
-            IncludedColumns = reader.ReadBitArray((int)reader.ReadLengthEncodedInteger());
+            var columnCount = (int)reader.ReadLengthEncodedInteger();
+            IncludedColumnsBeforeUpdate = reader.ReadBitArray(columnCount);
+            IncludedColumns = reader.ReadBitArray(columnCount);
         }
 
         protected override void ReadData(ref SequenceReader<byte> reader, BitArray includedColumns, TableMapEvent tableMap, int columnCount)
