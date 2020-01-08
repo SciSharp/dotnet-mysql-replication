@@ -42,8 +42,19 @@ namespace Test
             {
                 await mysqlConn.OpenAsync();
 
+                // insert
                 var cmd = mysqlConn.CreateCommand();
-                cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death) values ('Rokie', 'Kerry', 'abc', 'F', '1982-04-20', '3000-01-01')";
+                cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death) values ('Rokie', 'Kerry', 'abc', 'F', '1982-04-20', '3000-01-01'); SELECT LAST_INSERT_ID();";
+                var id = (UInt64)(await cmd.ExecuteScalarAsync());
+
+                // update
+                cmd = mysqlConn.CreateCommand();
+                cmd.CommandText = "update pet set owner='Linda' where `id`=" + id;
+                await cmd.ExecuteNonQueryAsync();
+
+                // delete
+                cmd = mysqlConn.CreateCommand();
+                cmd.CommandText = "delete from pet where `id`= " + id;
                 await cmd.ExecuteNonQueryAsync();
 
                 await foreach (var eventLog in client.FetchEvents())
