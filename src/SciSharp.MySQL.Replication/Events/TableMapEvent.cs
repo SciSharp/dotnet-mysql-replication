@@ -219,7 +219,7 @@ namespace SciSharp.MySQL.Replication
         {
             var result = new List<string[]>();
             
-            while (reader.TryPeek(out byte top) && top > 0)
+            while (reader.Remaining > 0)
             {
                 int valuesCount = (int)reader.ReadLengthEncodedInteger();
                 var typeValues = new string[valuesCount];
@@ -232,7 +232,6 @@ namespace SciSharp.MySQL.Replication
                 result.Add(typeValues);
             }
 
-            reader.Advance(1);
             return result;
         }
 
@@ -240,12 +239,11 @@ namespace SciSharp.MySQL.Replication
         {
             var list = new List<string>();
 
-            while (reader.TryPeek(out byte top) && top > 0)
+            while (reader.Remaining > 0)
             {
                 list.Add(reader.ReadLengthEncodedString());
             }
 
-            reader.Advance(1);
             return list;
         }
 
@@ -253,14 +251,11 @@ namespace SciSharp.MySQL.Replication
         {
             var charsets = new List<int>();
 
-            while (reader.TryPeek(out byte top) && top > 0)
+            while (reader.Remaining > 0)
             {
                 charsets.Add((int)reader.ReadLengthEncodedInteger());
             }
 
-            if (reader.Remaining > 0)
-                reader.Advance(1);
-                
             return charsets;
         }
 
@@ -268,13 +263,10 @@ namespace SciSharp.MySQL.Replication
         {
             var dict = new Dictionary<int, int>();
 
-            while (reader.TryPeek(out byte top) && top > 0)
+            while (reader.Remaining > 0)
             {
                 dict[(int)reader.ReadLengthEncodedInteger()] = (int)reader.ReadLengthEncodedInteger();
             }
-
-            if (reader.Remaining > 0)
-                reader.Advance(1);
 
             return dict;
         }
