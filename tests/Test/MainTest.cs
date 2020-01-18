@@ -62,7 +62,7 @@ namespace Test
                     Assert.NotNull(eventLog);
                     _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
                     
-                    if (eventLog is XIDEvent)
+                    if (eventLog is DeleteRowsEvent)
                         break;
                 }
             }            
