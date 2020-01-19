@@ -20,7 +20,7 @@ namespace SciSharp.MySQL.Replication
 
         public BitArray IncludedColumns { get; protected set; }
 
-        public List<object[]> Rows { get; protected set; }
+        public RowSet RowSet { get; protected set; }
 
         protected TableMapEvent TableMap { get; private set; }
 
@@ -60,18 +60,16 @@ namespace SciSharp.MySQL.Replication
             var sb = new StringBuilder();
             sb.Append($"{EventType.ToString()}\r\nTableID: {TableID}");
 
-            var columns = IncludedColumns;
+            var rowSet = RowSet;
+            var columnNames = rowSet.ColumnNames;
 
-            var columnNames = TableMap.Metadata.ColumnNames;
-
-            foreach (var row in Rows)
+            for (var i = 0; i < rowSet.Rows.Count; i++)
             {
-                for (int i = 0, j = 0; i < columns.Count; i++)
-                {
-                    if (!columns.Get(i))
-                        continue;
+                var row = rowSet.Rows[i];
 
-                    var name = columnNames?[i];
+                for (int j = 0; j < row.Length; j++)
+                {
+                    var name = columnNames?[j];
                     var value = row[j++];
 
                     if (string.IsNullOrEmpty(name))
@@ -91,19 +89,43 @@ namespace SciSharp.MySQL.Replication
 
         protected virtual void ReadData(ref SequenceReader<byte> reader, BitArray includedColumns, TableMapEvent tableMap, int columnCount)
         {
-            Rows = ReadRows(ref reader, tableMap, IncludedColumns, columnCount);
+            RowSet = ReadRows(ref reader, tableMap, IncludedColumns, columnCount);
         }
 
-        protected List<object[]> ReadRows(ref SequenceReader<byte> reader, TableMapEvent table, BitArray includedColumns, int columnCount)
+        protected IReadOnlyList<string> GetColumnNames(TableMapEvent table, BitArray includedColumns, int columnCount)
+        {
+            var columns = new List<string>(columnCount);
+            var columnNames = table.Metadata.ColumnNames;
+
+            if (columnNames != null && columnNames.Count > 0)
+            {
+                for (var i = 0; i < includedColumns.Count; i++)
+                {
+                    if (!includedColumns.Get(i))
+                        continue;
+
+                    columns.Add(columnNames[i]);
+                }
+            }
+
+            return columns;
+        }
+
+        protected RowSet ReadRows(ref SequenceReader<byte> reader, TableMapEvent table, BitArray includedColumns, int columnCount)
         {
             var rows = new List<object[]>();
+            var columns = GetColumnNames(table, includedColumns, columnCount);
             
             while (reader.Remaining > 0)
             {
                 rows.Add(ReadRow(ref reader, table, includedColumns, columnCount));
             }
 
-            return rows;
+            return new RowSet
+            {
+                Rows = rows,
+                ColumnNames = columns
+            };
         }
 
         protected int GetIncludedColumnCount(BitArray includedColumns)

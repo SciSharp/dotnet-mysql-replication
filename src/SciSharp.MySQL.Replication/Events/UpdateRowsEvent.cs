@@ -3,19 +3,11 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication
 {
     public sealed class UpdateRowsEvent :  RowsEvent
     {
-        public class CellValue
-        {
-            public object OldValue { get; set; }
-
-            public object NewValue { get; set; }
-        }
-
         public BitArray IncludedColumnsBeforeUpdate { get; private set; }
 
         protected override void ReadIncludedColumns(ref SequenceReader<byte> reader)
@@ -27,14 +19,15 @@ namespace SciSharp.MySQL.Replication
 
         protected override void ReadData(ref SequenceReader<byte> reader, BitArray includedColumns, TableMapEvent tableMap, int columnCount)
         {
-            Rows = ReadUpdatedRows(ref reader, tableMap, IncludedColumnsBeforeUpdate, includedColumns, columnCount);
+            RowSet = ReadUpdatedRows(ref reader, tableMap, IncludedColumnsBeforeUpdate, includedColumns, columnCount);
         }
 
-        private List<object[]> ReadUpdatedRows(ref SequenceReader<byte> reader, TableMapEvent tableMap, BitArray includedColumnsBeforeUpdate, BitArray includedColumns, int columnCount)
+        private RowSet ReadUpdatedRows(ref SequenceReader<byte> reader, TableMapEvent tableMap, BitArray includedColumnsBeforeUpdate, BitArray includedColumns, int columnCount)
         {
             var columnCountBeforeUpdate = GetIncludedColumnCount(IncludedColumnsBeforeUpdate);
 
             var rows = new List<object[]>();
+            var columns = GetColumnNames(tableMap, includedColumnsBeforeUpdate, columnCount);
 
             while (reader.Remaining > 0)
             {
@@ -56,7 +49,11 @@ namespace SciSharp.MySQL.Replication
                 rows.Add(cells);
             }
                         
-            return rows;
+            return new RowSet
+            {
+                ColumnNames = columns,
+                Rows = rows
+            };
         }
 
         public override string ToString()
@@ -65,16 +62,15 @@ namespace SciSharp.MySQL.Replication
             sb.Append($"{EventType.ToString()}\r\nTableID: {TableID}");
 
             var columns = IncludedColumns;
+            var rows = RowSet.Rows;
+            var columnNames = RowSet.ColumnNames;
 
-            var columnNames = TableMap.Metadata.ColumnNames;
-
-            foreach (var row in Rows)
+            for (var i = 0; i < rows.Count; i++)
             {
-                for (int i = 0, j = 0; i < columns.Count; i++)
-                {
-                    if (!columns.Get(i))
-                        continue;
+                var row = rows[i];
 
+                for (int j = 0; j < row.Length; j++)
+                {                    
                     var name = columnNames?[i];
                     var value = row[j++] as CellValue;
 
