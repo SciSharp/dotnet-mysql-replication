@@ -99,6 +99,22 @@ namespace SciSharp.MySQL.Replication
             return value;
         }
 
+        internal static int ReadBigEndianInteger(ref this SequenceReader<byte> reader, int length)
+        {
+            if (length > 4)
+                throw new ArgumentException("Length cannot be more than 4.", nameof(length));
+    
+            var unit = (int)Math.Pow(256, length - 1);
+            var value = 0;
+
+            for (var i = 0; i < length; i++)
+            {
+                reader.TryRead(out byte thisValue);
+                value += thisValue * (int)Math.Pow(256, length - i - 1);
+            }
+
+            return value;
+        }
 
         internal static long ReadLong(ref this SequenceReader<byte> reader, int length)
         {

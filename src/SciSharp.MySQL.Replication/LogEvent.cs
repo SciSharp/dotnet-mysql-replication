@@ -32,6 +32,8 @@ namespace SciSharp.MySQL.Replication
             DataTypes[(int)ColumnType.DATE] = new DateType();
             DataTypes[(int)ColumnType.STRING] = new StringType();
             DataTypes[(int)ColumnType.VARCHAR] = new VarCharType();
+            DataTypes[(int)ColumnType.DATETIME] = new DateTimeType();
+            DataTypes[(int)ColumnType.DATETIME_V2] = new DateTimeV2Type();
         }
 
         protected internal abstract void DecodeBody(ref SequenceReader<byte> reader, object context);
