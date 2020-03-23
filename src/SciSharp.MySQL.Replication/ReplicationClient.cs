@@ -17,6 +17,7 @@ namespace SciSharp.MySQL.Replication
         private const int BINLOG_DUMP_NON_BLOCK = 1;
         private const int BINLOG_SEND_ANNOTATE_ROWS_EVENT = 2;
         private MySqlConnection _connection;
+        private int _serverId;
         private Stream _stream;
         private PipeChannel<LogEvent> _pipeChannel;
         private ILogger _logger;
@@ -91,6 +92,7 @@ namespace SciSharp.MySQL.Replication
                 LogEvent.ChecksumType = binlogChecksum;
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
+                _serverId = serverId;
 
                 await StartDumpBinlog(_stream, serverId, binlogInfo.Item1, binlogInfo.Item2);
 
