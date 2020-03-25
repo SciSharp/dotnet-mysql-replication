@@ -158,8 +158,8 @@ namespace SciSharp.MySQL.Replication
 
                 int index = i - numberOfSkippedColumns;
 
-                if (!nullColumns.Get(index))
-                    continue;
+                if (nullColumns.Get(index))
+                    continue;            
 
                 var typeCode = columnTypes[i];
                 var meta = columnMetadata[i];
@@ -194,7 +194,7 @@ namespace SciSharp.MySQL.Replication
                         length = meta;
                     }
                 }
-
+                
                 cells[index] = ReadCell(ref reader, columnType, meta, length);
             }
 
