@@ -9,23 +9,38 @@ namespace SciSharp.MySQL.Replication
 {
     public static class SequenceReaderExtensions
     {
-        internal static BitArray ReadBitArray(ref this SequenceReader<byte> reader, int length, bool defaultValue = false)
+        internal static BitArray ReadBitArray(ref this SequenceReader<byte> reader, int length, bool bigEndian = false)
         {
             var dataLen = (length + 7) / 8;
-            var array = new BitArray(length, defaultValue);
-    
-            for (int i = 0; i < dataLen; i++)
-            {
-                reader.TryRead(out byte b);
+            var array = new BitArray(length, false);
 
-                for (var j = i * 8; j < Math.Min((i + 1) * 8, length); j++)
+            if (!bigEndian)
+            {
+                for (int i = 0; i < dataLen; i++)
                 {
-                    if ((b & (0x01 << (j % 8))) != 0x00)
-                        array.Set(j, true);
+                    reader.TryRead(out byte b);
+                    SetBitArray(array, b, i, length);
                 }
             }
+            else
+            {
+                for (int i = dataLen - 1; i >= 0; i--)
+                {
+                    reader.TryRead(out byte b);
+                    SetBitArray(array, b, i, length);
+                }
+            }            
 
             return array;
+        }
+
+        private static void SetBitArray(BitArray array, byte b, int i, int length)
+        {
+            for (var j = i * 8; j < Math.Min((i + 1) * 8, length); j++)
+            {
+                if ((b & (0x01 << (j % 8))) != 0x00)
+                    array.Set(j, true);
+            }
         }
 
         internal static string ReadString(ref this SequenceReader<byte> reader, Encoding encoding)
