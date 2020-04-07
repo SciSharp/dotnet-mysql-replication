@@ -57,7 +57,7 @@ namespace SciSharp.MySQL.Replication
             ServerVersion = ReadServerVersion(ref reader, 50);     
 
             reader.TryReadLittleEndian(out int seconds);
-            CreateTimestamp = LogEvent.GetTimestapmFromUnixEpoch(seconds);
+            CreateTimestamp = LogEvent.GetTimestampFromUnixEpoch(seconds);
 
             reader.TryRead(out byte eventLen);
             EventHeaderLength = eventLen;

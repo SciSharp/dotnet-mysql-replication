@@ -60,7 +60,7 @@ namespace SciSharp.MySQL.Replication
             }
 
             reader.TryReadLittleEndian(out int seconds);
-            var timestamp = LogEvent.GetTimestapmFromUnixEpoch(seconds);
+            var timestamp = LogEvent.GetTimestampFromUnixEpoch(seconds);
 
             reader.TryRead(out byte eventTypeValue);
             var eventType = (LogEventType)eventTypeValue;

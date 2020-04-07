@@ -25,7 +25,7 @@ namespace SciSharp.MySQL.Replication
             SlaveProxyID = slaveProxyID;
 
             reader.TryReadLittleEndian(out int seconds);
-            ExecutionTime = LogEvent.GetTimestapmFromUnixEpoch(seconds);
+            ExecutionTime = LogEvent.GetTimestampFromUnixEpoch(seconds);
 
             reader.TryRead(out byte schemaLen);
 

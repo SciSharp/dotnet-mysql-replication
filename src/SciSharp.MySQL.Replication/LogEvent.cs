@@ -43,7 +43,7 @@ namespace SciSharp.MySQL.Replication
 
         private static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1);
 
-        internal static DateTime GetTimestapmFromUnixEpoch(int seconds)
+        internal static DateTime GetTimestampFromUnixEpoch(int seconds)
         {
             return _unixEpoch.AddSeconds(seconds);
         }
