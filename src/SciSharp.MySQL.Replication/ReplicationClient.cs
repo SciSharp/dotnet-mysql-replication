@@ -1,16 +1,16 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using MySql.Data.MySqlClient;
 using System.Reflection;
 using System.Buffers.Binary;
-using SuperSocket.Channel;
 using Microsoft.Extensions.Logging;
+using MySql.Data.MySqlClient;
+using SuperSocket.Channel;
+using SuperSocket.Client;
 
 namespace SciSharp.MySQL.Replication
 {
-    public class ReplicationClient : IReplicationClient
+    public class ReplicationClient : EasyClient<LogEvent>, IReplicationClient
     {
         private const byte CMD_DUMP_BINLOG = 0x12;
         private const int BIN_LOG_HEADER_SIZE = 4;
@@ -19,9 +19,7 @@ namespace SciSharp.MySQL.Replication
         private MySqlConnection _connection;
         private int _serverId;
         private Stream _stream;
-        private PipeChannel<LogEvent> _pipeChannel;
-        private ILogger _logger;
-
+        private static ILogger _logger;
         static ReplicationClient()
         {
             LogEventPackageDecoder.RegisterEmptyPayloadEventTypes(
@@ -44,14 +42,16 @@ namespace SciSharp.MySQL.Replication
             LogEventPackageDecoder.RegisterLogEventType<DeleteRowsEvent>(LogEventType.DELETE_ROWS_EVENT);
             LogEventPackageDecoder.RegisterLogEventType<UpdateRowsEvent>(LogEventType.UPDATE_ROWS_EVENT);
             LogEventPackageDecoder.RegisterLogEventType<XIDEvent>(LogEventType.XID_EVENT);
+
+            _logger = LoggerFactory
+                .Create(builder => builder.AddConsole())
+                .CreateLogger<ReplicationClient>();
         }
 
         public ReplicationClient()
+            : base(new LogEventPipelineFilter(), _logger)
         {
-            using (var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole()))
-            {
-                _logger = loggerFactory.CreateLogger<ReplicationClient>();
-            }
+            
         }
 
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
@@ -64,7 +64,7 @@ namespace SciSharp.MySQL.Replication
             return baseStreamField.GetValue(handler) as Stream;
         }
 
-        public async Task<LoginResult> ConnectAsync(string server, string username, string password, int serverId, string fileName)
+        public async Task<LoginResult> ConnectAsync(string server, string username, string password, int serverId)
         {
             var connString = $"Server={server}; UID={username}; Password={password}";
 
@@ -97,6 +97,18 @@ namespace SciSharp.MySQL.Replication
                 await StartDumpBinlog(_stream, serverId, binlogInfo.Item1, binlogInfo.Item2);
 
                 _connection = mysqlConn;
+
+                var channel = new StreamPipeChannel<LogEvent>(_stream, null,
+                    new LogEventPipelineFilter
+                    {
+                        Context = new ReplicationState()
+                    },
+                    new ChannelOptions
+                    {
+                        Logger = _logger
+                    });
+
+                SetupChannel(channel);
                 return new LoginResult { Result = true };
             }
             catch (Exception e)
@@ -206,24 +218,17 @@ namespace SciSharp.MySQL.Replication
             await stream.FlushAsync();
         }
 
-        public IAsyncEnumerable<LogEvent> FetchEvents()
+        public new void StartReceive()
         {
-            _pipeChannel = new StreamPipeChannel<LogEvent>(_stream, null, new LogEventPipelineFilter(), new ChannelOptions
-                {
-                    Logger = _logger
-                });
-
-            var repState = new ReplicationState();
-            
-            if (_pipeChannel is IPipeChannel pipeChannel)
-            {
-                pipeChannel.PipelineFilter.Context = repState; 
-            }
-
-            return _pipeChannel.RunAsync();
+            base.StartReceive();
         }
 
-        public async ValueTask CloseAsync()
+        public new ValueTask<LogEvent> ReceiveAsync()
+        {
+            return base.ReceiveAsync();
+        }
+
+        public override async ValueTask CloseAsync()
         {
             var connection = _connection;
 
@@ -231,7 +236,9 @@ namespace SciSharp.MySQL.Replication
             {
                 _connection = null;
                 await connection.CloseAsync();
-            }            
+            }
+
+            await base.CloseAsync();
         }
     }
 }

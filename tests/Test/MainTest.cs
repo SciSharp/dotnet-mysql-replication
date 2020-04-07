@@ -21,7 +21,7 @@ namespace Test
 
         private async Task<LoginResult> ConnectAsync(ReplicationClient client)
         {
-            return await client.ConnectAsync("localhost", "root", "scisharp", 1, "");
+            return await client.ConnectAsync("localhost", "root", "scisharp", 1);
         }
 
         private MySqlConnection CreateConnection()
@@ -66,11 +66,12 @@ namespace Test
                 cmd.CommandText = "delete from pet where `id`= " + id;
                 await cmd.ExecuteNonQueryAsync();
 
-                await foreach (var eventLog in client.FetchEvents())
+                while (true)
                 {
+                    var eventLog = await client.ReceiveAsync();
                     Assert.NotNull(eventLog);
                     _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
-                    
+
                     if (eventLog is DeleteRowsEvent)
                         break;
                 }
@@ -97,8 +98,10 @@ namespace Test
                 cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death, timeUpdated) values ('Rokie', 'Kerry', 'abc', 'F', '1982-04-20', '3000-01-01', now()); SELECT LAST_INSERT_ID();";
                 var id = (UInt64)(await cmd.ExecuteScalarAsync());
 
-                await foreach (var eventLog in client.FetchEvents())
+                while (true)
                 {
+                    var eventLog = await client.ReceiveAsync();
+
                     if (eventLog.EventType == LogEventType.WRITE_ROWS_EVENT)
                     {
                         var log = eventLog as WriteRowsEvent;
@@ -160,8 +163,10 @@ namespace Test
                 cmd.CommandText = "update pet set owner='Linda', timeUpdated=now() where `id`=" + id;
                 await cmd.ExecuteNonQueryAsync();
 
-                await foreach (var eventLog in client.FetchEvents())
+                while (true)
                 {
+                    var eventLog = await client.ReceiveAsync();
+
                     _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
                     
                     if (eventLog.EventType == LogEventType.UPDATE_ROWS_EVENT)
