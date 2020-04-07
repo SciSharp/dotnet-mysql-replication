@@ -10,9 +10,13 @@ C# Implementation of MySQL replication protocol. This allow you to receive event
 
 using SciSharp.MySQL.Replication;
 
+var serverHost = "localhost";
+var username = "root";
+var password = "scisharp";
+var serverId =  1; // replication server id
 
 var client = new ReplicationClient();
-var result = await client.ConnectAsync("localhost", "root", "scisharp", 1);
+var result = await client.ConnectAsync(serverHost, username, password, serverId);
 
 if (!result.Result)
 {
