@@ -5,7 +5,7 @@ using System.Buffers;
 
 namespace SciSharp.MySQL.Replication
 {
-    class DateTimeV2Type : IMySQLDataType
+    class DateTimeV2Type : TimeBaseType, IMySQLDataType
     {
         public object ReadValue(ref SequenceReader<byte> reader, int meta)
         {
@@ -48,17 +48,6 @@ namespace SciSharp.MySQL.Replication
             var fsp = ReadFractionalSeconds(ref reader, meta);
 
             return new DateTime(year, month, days, hours, minutes, seconds, fsp / 1000);     
-        }
-
-        private int ReadFractionalSeconds(ref SequenceReader<byte> reader, int meta)
-        {
-            int length = (meta + 1) / 2;
-
-            if (length <= 0)
-                return 0;
-
-            int fraction = reader.ReadBigEndianInteger(length);
-            return fraction * (int) Math.Pow(100, 3 - length);
         }
     }
 }
