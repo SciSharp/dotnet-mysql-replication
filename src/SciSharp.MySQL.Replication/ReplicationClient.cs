@@ -13,13 +13,25 @@ namespace SciSharp.MySQL.Replication
     public class ReplicationClient : EasyClient<LogEvent>, IReplicationClient
     {
         private const byte CMD_DUMP_BINLOG = 0x12;
+
         private const int BIN_LOG_HEADER_SIZE = 4;
+
         private const int BINLOG_DUMP_NON_BLOCK = 1;
+
         private const int BINLOG_SEND_ANNOTATE_ROWS_EVENT = 2;
+
         private MySqlConnection _connection;
+
         private int _serverId;
+
         private Stream _stream;
-        private static ILogger _logger;
+
+        public new ILogger Logger
+        {
+            get { return base.Logger; }
+            set { base.Logger = value; }
+        }
+
         static ReplicationClient()
         {
             LogEventPackageDecoder.RegisterEmptyPayloadEventTypes(
@@ -42,14 +54,10 @@ namespace SciSharp.MySQL.Replication
             LogEventPackageDecoder.RegisterLogEventType<DeleteRowsEvent>(LogEventType.DELETE_ROWS_EVENT);
             LogEventPackageDecoder.RegisterLogEventType<UpdateRowsEvent>(LogEventType.UPDATE_ROWS_EVENT);
             LogEventPackageDecoder.RegisterLogEventType<XIDEvent>(LogEventType.XID_EVENT);
-
-            _logger = LoggerFactory
-                .Create(builder => builder.AddConsole())
-                .CreateLogger<ReplicationClient>();
         }
 
         public ReplicationClient()
-            : base(new LogEventPipelineFilter(), _logger)
+            : base(new LogEventPipelineFilter())
         {
             
         }
@@ -105,7 +113,7 @@ namespace SciSharp.MySQL.Replication
                     },
                     new ChannelOptions
                     {
-                        Logger = _logger
+                        Logger = Logger
                     });
 
                 SetupChannel(channel);

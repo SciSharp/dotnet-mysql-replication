@@ -6,7 +6,6 @@
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="8.0.17" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.0.0" />
-    <PackageReference Include="SuperSocket.Client" Version="2.0.0-preview3-02" />
+    <PackageReference Include="SuperSocket.Client" Version="2.0.0-preview3-03" />
   </ItemGroup>
 </Project>
