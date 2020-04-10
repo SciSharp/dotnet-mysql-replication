@@ -1,6 +1,7 @@
 # dotnet-mysql-replication
 
 [![Build Status](https://api.travis-ci.org/SciSharp/dotnet-mysql-replication.svg?branch=master)](https://travis-ci.org/SciSharp/dotnet-mysql-replication)
+[![NuGet Version](https://img.shields.io/nuget/v/SciSharp.MySQL.Replication.svg?style=flat)](https://www.nuget.org/packages/SciSharp.MySQL.Replication/)
 
 C# Implementation of MySQL replication protocol. This allow you to receive event like insert, update, delete with their datas and raw SQL queries.
 
