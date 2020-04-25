@@ -43,7 +43,7 @@ namespace SciSharp.MySQL.Replication
             return log;
         }
 
-        public LogEvent Decode(ReadOnlySequence<byte> buffer, object context)
+        public LogEvent Decode(ref ReadOnlySequence<byte> buffer, object context)
         {
             var reader = new SequenceReader<byte>(buffer);
 
