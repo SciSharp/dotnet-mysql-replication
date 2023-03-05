@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFrameworks>netstandard2.1;net6.0;net7.0</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
-    <Version>1.0-preview2</Version>
+    <Version>1.0.0-preview.3</Version>
   </PropertyGroup>
   <PropertyGroup>    
     <PackageProjectUrl>https://github.com/SciSharp/dotnet-mysql-replication</PackageProjectUrl>
@@ -16,6 +16,6 @@
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="8.0.17" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
-    <PackageReference Include="SuperSocket.Client" Version="2.0.0-beta.8" />
+    <PackageReference Include="SuperSocket.Client" Version="2.0.0-beta.15" />
   </ItemGroup>
 </Project>
