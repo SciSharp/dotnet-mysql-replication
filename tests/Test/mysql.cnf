@@ -1,0 +1,5 @@
+[mysqld]
+default-authentication-plugin=mysql_native_password
+server-id=1
+log_bin_basename=mysql-bin
+binlog_row_metadata=full
