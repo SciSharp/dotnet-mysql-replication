@@ -26,7 +26,7 @@ jobs:
               run: dotnet build -c Release
             - name: Run MySQL
               run: |
-                cp tests/Test/mysql.cnf /etc/mysql/my.cnf
+                cp tests/Test/mysql.cnf ~/.my.cnf
                 sudo systemctl start mysql.service
             - name: Test
               run: |
