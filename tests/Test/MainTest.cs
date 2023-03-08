@@ -21,7 +21,7 @@ namespace Test
 
         private async Task<LoginResult> ConnectAsync(ReplicationClient client)
         {
-            return await client.ConnectAsync("localhost", "root", "scisharp", 1);
+            return await client.ConnectAsync("localhost", "root", "root", 1);
         }
 
         private MySqlConnection CreateConnection()
