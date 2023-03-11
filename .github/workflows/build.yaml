@@ -27,8 +27,8 @@ jobs:
             - name: Run MySQL
               run: |
                 cp tests/Test/mysql.cnf ~/.my.cnf
+                cp tests/Test/dump.sql /docker-entrypoint-initdb.d/dump.sql
                 sudo systemctl start mysql.service
-                mysql -u root -p root garden < tests/Test/dump.sql
             - name: Test
               run: |
                 cd tests/Test
