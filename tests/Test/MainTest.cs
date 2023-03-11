@@ -103,7 +103,7 @@ namespace Test
 
                 // insert
                 var cmd = mysqlConn.CreateCommand();
-                cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death, timeUpdated) values ('Rokie', 'Kerry', 'abc', 'F', '1982-04-20', '3000-01-01', now()); SELECT LAST_INSERT_ID();";
+                cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death, timeUpdated) values ('Rokie', 'Kerry', 'abc', 'F', '1992-05-20', '3000-01-01', now()); SELECT LAST_INSERT_ID();";
                 var id = (UInt64)(await cmd.ExecuteScalarAsync());
 
                 while (true)
@@ -147,8 +147,13 @@ namespace Test
             {
                 await mysqlConn.OpenAsync();
 
-                // query
+                // insert
                 var cmd = mysqlConn.CreateCommand();
+                cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death, timeUpdated) values ('Rokie', 'Kerry', 'abc', 'F', '1992-05-20', '3000-01-01', now());";
+                await cmd.ExecuteNonQueryAsync();
+
+                // query
+                cmd = mysqlConn.CreateCommand();
                 cmd.CommandText = "select * from pet order by `id` desc limit 1;";
 
                 var oldValues = new Dictionary<string, object>();
