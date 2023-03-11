@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.1;net6.0;net7.0</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
-    <Version>1.0.0-preview.3</Version>
   </PropertyGroup>
   <PropertyGroup>    
     <PackageProjectUrl>https://github.com/SciSharp/dotnet-mysql-replication</PackageProjectUrl>

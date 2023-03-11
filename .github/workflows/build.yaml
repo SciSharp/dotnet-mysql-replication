@@ -18,12 +18,14 @@ jobs:
               run: |
                 echo "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> $GITHUB_ENV
                 echo "DOTNET_hostBuilder:reloadConfigOnChange=false" >> $GITHUB_ENV
+            - uses: dotnet/nbgv@master
+              id: nbgv
             - name: Clean
               run: |
                 dotnet clean ./SciSharp.MySQL.Replication.sln --configuration Release
                 dotnet nuget locals all --clear
             - name: Build
-              run: dotnet build -c Release
+              run: dotnet build -c Debug
             - name: Run MySQL
               run: |
                 cp tests/Test/mysql.cnf ~/.my.cnf
@@ -34,3 +36,7 @@ jobs:
               run: |
                 cd tests/Test
                 dotnet test
+            - name: Pack
+              run: dotnet pack -c Release -p:PackageVersion=${{ steps.nbgv.outputs.NuGetPackageVersion }}.${{ github.run_number }} -p:Version=${{ steps.nbgv.outputs.NuGetPackageVersion }}.${{ github.run_number }} -p:AssemblyVersion=${{ steps.nbgv.outputs.AssemblyVersion }} -p:AssemblyFileVersion=${{ steps.nbgv.outputs.AssemblyFileVersion }} -p:AssemblyInformationalVersion=${{ steps.nbgv.outputs.AssemblyInformationalVersion }} /p:NoPackageAnalysis=true
+            - name: Push
+              run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.MYGET_API_KEY }} --source https://www.myget.org/F/scisharp/api/v3/index.json
