@@ -21,12 +21,12 @@ namespace Test
 
         private async Task<LoginResult> ConnectAsync(ReplicationClient client)
         {
-            return await client.ConnectAsync("127.0.0.1", "root", "root", 1);
+            return await client.ConnectAsync("localhost", "root", "root", 1);
         }
 
         private MySqlConnection CreateConnection()
         {
-            return new MySqlConnection("Server=localhost;Database=garden;Uid=root;Pwd=scisharp;");
+            return new MySqlConnection("Server=localhost;Database=garden;Uid=root;Pwd=root;");
         }
         
         [Fact]
