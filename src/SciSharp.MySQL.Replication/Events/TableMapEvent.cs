@@ -209,6 +209,10 @@ namespace SciSharp.MySQL.Replication
                 case MetadataFieldType.ENUM_AND_SET_COLUMN_CHARSET:
                     metadata.EnumAndSetColumnCharsets = ReadIntegers(ref subReader);
                     break;
+                
+                case MetadataFieldType.COLUMN_VISIBILITY:
+                    metadata.ColumnVisibility = subReader.ReadBitArray(ColumnCount);
+                    break;
 
                 default:
                     throw new Exception("Unsupported table metadata field type: " + fieldType);
@@ -298,7 +302,8 @@ namespace SciSharp.MySQL.Replication
             SIMPLE_PRIMARY_KEY = 8,              // The primary key without any prefix
             PRIMARY_KEY_WITH_PREFIX = 9,         // The primary key with some prefix
             ENUM_AND_SET_DEFAULT_CHARSET = 10,   // Charsets of ENUM and SET columns
-            ENUM_AND_SET_COLUMN_CHARSET = 11    // Charsets of ENUM and SET columns
+            ENUM_AND_SET_COLUMN_CHARSET = 11,    // Charsets of ENUM and SET columns
+            COLUMN_VISIBILITY = 12               // Column visibility
         }
 
     }

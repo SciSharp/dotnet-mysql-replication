@@ -19,5 +19,6 @@ namespace SciSharp.MySQL.Replication
         public Dictionary<int, int> PrimaryKeysWithPrefix { get; set; }
         public DefaultCharset EnumAndSetDefaultCharset { get; set; }
         public List<int> EnumAndSetColumnCharsets { get; set; }
+        public BitArray ColumnVisibility { get; set; }
     }
 }
