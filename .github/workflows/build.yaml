@@ -28,7 +28,7 @@ jobs:
               run: |
                 cp tests/Test/mysql.cnf ~/.my.cnf
                 sudo systemctl start mysql.service
-                mysql -e 'CREATE DATABASE garden;USE garden;CREATE TABLE pet (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE, timeUpdated datetime);' -u root -p root
+                mysql -e 'CREATE DATABASE garden;USE garden;CREATE TABLE pet (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE, timeUpdated datetime);' -uroot -proot
             - name: Test
               run: |
                 cd tests/Test
