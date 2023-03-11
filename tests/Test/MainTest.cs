@@ -6,6 +6,8 @@ using MySql.Data.MySqlClient;
 using SciSharp.MySQL.Replication;
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 namespace Test
 {
@@ -14,9 +16,13 @@ namespace Test
     {
         protected readonly ITestOutputHelper _outputHelper;
 
+        private readonly ILogger _logger;
+
         public MainTest(ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
+            using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            _logger = loggerFactory.CreateLogger<MainTest>();
         }
 
         private async Task<LoginResult> ConnectAsync(ReplicationClient client)
@@ -42,6 +48,7 @@ namespace Test
         public async Task TestReceiveEvent()
         {
             var client = new ReplicationClient();
+            client.Logger = _logger;
 
             var result = await ConnectAsync(client);
             
@@ -84,6 +91,7 @@ namespace Test
         public async Task TestInsertEvent()
         {
             var client = new ReplicationClient();
+            client.Logger = _logger;
 
             var result = await ConnectAsync(client);
             
@@ -129,6 +137,7 @@ namespace Test
         public async Task TestUpdateEvent()
         {
             var client = new ReplicationClient();
+            client.Logger = _logger;
 
             var result = await ConnectAsync(client);
             
