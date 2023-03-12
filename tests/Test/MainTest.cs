@@ -14,6 +14,10 @@ namespace Test
     [Trait("Category", "Replication")]
     public class MainTest
     {
+        private const string _host = "localhost";
+        private const string _username = "root";
+        private const string _password = "root";       
+
         protected readonly ITestOutputHelper _outputHelper;
 
         private readonly ILogger _logger;
@@ -27,12 +31,12 @@ namespace Test
 
         private async Task<LoginResult> ConnectAsync(ReplicationClient client)
         {
-            return await client.ConnectAsync("localhost", "root", "root", 1);
+            return await client.ConnectAsync(_host, _username,_password, 1);
         }
 
         private MySqlConnection CreateConnection()
         {
-            return new MySqlConnection("Server=localhost;Database=garden;Uid=root;Pwd=root;");
+            return new MySqlConnection($"Server={_host};Database=garden;Uid={_username};Pwd={_password};");
         }
         
         [Fact]
