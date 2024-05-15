@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Buffers.Binary;
 using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
-using SuperSocket.Channel;
+using SuperSocket.Connection;
 using SuperSocket.Client;
 
 namespace SciSharp.MySQL.Replication
@@ -106,17 +106,15 @@ namespace SciSharp.MySQL.Replication
 
                 _connection = mysqlConn;
 
-                var channel = new StreamPipeChannel<LogEvent>(_stream, null,
-                    new LogEventPipelineFilter
-                    {
-                        Context = new ReplicationState()
-                    },
-                    new ChannelOptions
-                    {
-                        Logger = Logger
-                    });
+                var connection = new StreamPipeConnection(
+                    stream: _stream,
+                    remoteEndPoint: null,
+                    options: new ConnectionOptions
+                        {
+                            Logger = Logger
+                        });
 
-                SetupChannel(channel);
+                SetupConnection(connection);
                 return new LoginResult { Result = true };
             }
             catch (Exception e)
@@ -167,8 +165,6 @@ namespace SciSharp.MySQL.Replication
                 return (ChecksumType)Enum.Parse(typeof(ChecksumType), checksumTypeName);
             }
         }
-
-
         
         private async ValueTask ConfirmChecksum(MySqlConnection mysqlConn)
         {
@@ -176,7 +172,6 @@ namespace SciSharp.MySQL.Replication
             cmd.CommandText = "set @`master_binlog_checksum` = @@binlog_checksum;";        
             await cmd.ExecuteNonQueryAsync();
         }
-        
 
         /*
         https://dev.mysql.com/doc/internals/en/com-binlog-dump.html
