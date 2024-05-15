@@ -13,7 +13,7 @@
     <Company>SciSharp STACK</Company>
     <PackageTags>MySQL;replication;C#;client</PackageTags>
     <Description>
-      dotnet-mysql-replication is a MySQL replication client in C#.
+      dotnet-mysql-replication is a C# Implementation of MySQL replication protocol client. This allows you to receive event like insert, update, delete with their data and raw SQL queries.
     </Description>
   </PropertyGroup>
   <ItemGroup>
