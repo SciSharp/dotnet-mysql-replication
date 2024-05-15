@@ -11,6 +11,10 @@
     <IncludeSource>true</IncludeSource>
     <Authors>Kerry Jiang and other contributors</Authors>
     <Company>SciSharp STACK</Company>
+    <PackageTags>MySQL;replication;C#;client</PackageTags>
+    <Description>
+      dotnet-mysql-replication is a MySQL replication client in C#.
+    </Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="8.4.0" />
