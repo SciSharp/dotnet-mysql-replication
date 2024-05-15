@@ -14,6 +14,7 @@ namespace SciSharp.MySQL.Replication
             : base(3)
         {
             Decoder = new LogEventPackageDecoder();
+            Context = new ReplicationState();
         }
 
         protected override int GetBodyLengthFromHeader(ref ReadOnlySequence<byte> buffer)
