@@ -4,7 +4,7 @@
 [![MyGet Version](https://img.shields.io/myget/scisharp/vpre/SciSharp.MySQL.Replication)](https://www.myget.org/feed/scisharp/package/nuget/SciSharp.MySQL.Replication)
 [![NuGet Version](https://img.shields.io/nuget/v/SciSharp.MySQL.Replication.svg?style=flat)](https://www.nuget.org/packages/SciSharp.MySQL.Replication/)
 
-dotnet-mysql-replication is a C# Implementation of MySQL replication protocol client. This allows you to receive event like insert, update, delete with their data and raw SQL queries.
+dotnet-mysql-replication is a C# Implementation of MySQL replication protocol client. This allows you to receive events like insert, update, delete with their data and raw SQL queries from MySQL.
 
 ## Usage
 
