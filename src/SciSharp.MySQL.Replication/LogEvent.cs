@@ -6,18 +6,54 @@ using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication
 {
+    /// <summary>
+    /// Base class for all MySQL binary log events.
+    /// </summary>
     public abstract class LogEvent
     {
-        public static ChecksumType ChecksumType { get; internal set; }        
+        /// <summary>
+        /// Gets or sets the checksum type used for log events.
+        /// </summary>
+        public static ChecksumType ChecksumType { get; internal set; }
+        
+        /// <summary>
+        /// Gets or sets the timestamp when the event was created.
+        /// </summary>
         public DateTime Timestamp { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the type of the log event.
+        /// </summary>
         public LogEventType EventType { get; internal set; }
+        
+        /// <summary>
+        /// Gets or sets the server ID that generated the event.
+        /// </summary>
         public int ServerID { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the total size of the event in bytes.
+        /// </summary>
         public int EventSize { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the position of the event in the binary log.
+        /// </summary>
         public int Position { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the flags associated with the event.
+        /// </summary>
         public LogEventFlag Flags { get; set; }
 
+        /// <summary>
+        /// Gets or sets the array of MySQL data type handlers.
+        /// </summary>
         internal static IMySQLDataType[] DataTypes { get; private set; } = new IMySQLDataType[256];
 
+        /// <summary>
+        /// Static constructor to initialize data type handlers.
+        /// </summary>
         static LogEvent()
         {
             DataTypes[(int)ColumnType.BIT] = new BitType();
@@ -36,20 +72,48 @@ namespace SciSharp.MySQL.Replication
             DataTypes[(int)ColumnType.DATETIME_V2] = new DateTimeV2Type();
         }
 
+        /// <summary>
+        /// Decodes the body of the log event from the binary data.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing binary data.</param>
+        /// <param name="context">The context object containing additional information.</param>
         protected internal abstract void DecodeBody(ref SequenceReader<byte> reader, object context);
 
+        /// <summary>
+        /// Maria DB slave capability flag for GTID support.
+        /// </summary>
         public const int MARIA_SLAVE_CAPABILITY_GTID = 4;
+        
+        /// <summary>
+        /// Maria DB slave capability flags used by this implementation.
+        /// </summary>
         public const int MARIA_SLAVE_CAPABILITY_MINE = MARIA_SLAVE_CAPABILITY_GTID;
 
+        /// <summary>
+        /// The Unix epoch reference time (1970-01-01).
+        /// </summary>
         private static readonly DateTime _unixEpoch = new DateTime(1970, 1, 1);
 
+        /// <summary>
+        /// Converts Unix timestamp (seconds since epoch) to DateTime.
+        /// </summary>
+        /// <param name="seconds">Seconds since Unix epoch.</param>
+        /// <returns>Corresponding DateTime.</returns>
         internal static DateTime GetTimestampFromUnixEpoch(int seconds)
         {
             return _unixEpoch.AddSeconds(seconds);
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this event has a CRC checksum.
+        /// </summary>
         protected bool HasCRC { get; set; } = false;
 
+        /// <summary>
+        /// Rebuilds the reader to exclude the CRC checksum from the data if needed.
+        /// </summary>
+        /// <param name="reader">The sequence reader to modify.</param>
+        /// <returns>True if the reader was modified, otherwise false.</returns>
         protected bool RebuildReaderAsCRC(ref SequenceReader<byte> reader)
         {
             if (!HasCRC || ChecksumType == ChecksumType.NONE)
@@ -59,6 +123,10 @@ namespace SciSharp.MySQL.Replication
             return true;
         }
 
+        /// <summary>
+        /// Returns a string that represents the current object.
+        /// </summary>
+        /// <returns>A string that represents the current object.</returns>
         public override string ToString()
         {
             return EventType.ToString();

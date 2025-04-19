@@ -5,8 +5,20 @@ using System.Buffers;
 
 namespace SciSharp.MySQL.Replication
 {
+    /// <summary>
+    /// Represents the MySQL DATETIME2 data type.
+    /// </summary>
+    /// <remarks>
+    /// Handles the reading and conversion of MySQL DATETIME2 values with fractional seconds.
+    /// </remarks>
     class DateTimeV2Type : TimeBaseType, IMySQLDataType
     {
+        /// <summary>
+        /// Reads a DATETIME2 value from the binary log.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the bytes to read.</param>
+        /// <param name="meta">Metadata for the column defining fractional second precision.</param>
+        /// <returns>A DateTime object representing the MySQL DATETIME2 value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, int meta)
         {
             /*

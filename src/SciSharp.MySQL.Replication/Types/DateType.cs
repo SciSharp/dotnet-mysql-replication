@@ -5,8 +5,20 @@ using System.Buffers;
 
 namespace SciSharp.MySQL.Replication
 {
+    /// <summary>
+    /// Represents the MySQL DATE data type.
+    /// </summary>
+    /// <remarks>
+    /// Handles the reading and conversion of MySQL DATE values.
+    /// </remarks>
     class DateType : IMySQLDataType
     {
+        /// <summary>
+        /// Reads a DATE value from the binary log.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the bytes to read.</param>
+        /// <param name="meta">Metadata for the column.</param>
+        /// <returns>A DateTime object representing the MySQL DATE value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, int meta)
         {
             // 11111000 00000000 00000000
