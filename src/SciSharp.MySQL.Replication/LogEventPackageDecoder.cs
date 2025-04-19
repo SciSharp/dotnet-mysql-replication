@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using SciSharp.MySQL.Replication.Events;
 using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication

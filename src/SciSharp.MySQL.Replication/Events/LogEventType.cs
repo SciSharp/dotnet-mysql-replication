@@ -1,6 +1,6 @@
 using System;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents the different types of events in a MySQL binary log.

@@ -1,11 +1,6 @@
 using System;
-using System.Buffers;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Specifies flags that provide additional information about rows events in MySQL replication.

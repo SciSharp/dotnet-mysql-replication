@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a MySQL TABLE_MAP_EVENT that contains information about a table's structure.

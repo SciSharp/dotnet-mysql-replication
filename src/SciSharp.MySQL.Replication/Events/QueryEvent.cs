@@ -1,9 +1,8 @@
 using System;
 using System.Buffers;
 using System.Text;
-using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a MySQL QUERY_EVENT that contains SQL statements executed on the server.

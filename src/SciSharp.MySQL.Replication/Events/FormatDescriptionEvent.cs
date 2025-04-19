@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Text;
 using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a MySQL FORMAT_DESCRIPTION_EVENT that describes the format of the binary log.

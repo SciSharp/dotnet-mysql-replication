@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Text;
 using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents an error event in the MySQL binary log.

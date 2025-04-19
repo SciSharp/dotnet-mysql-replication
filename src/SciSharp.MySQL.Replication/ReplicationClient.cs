@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using SuperSocket.Connection;
 using SuperSocket.Client;
+using SciSharp.MySQL.Replication.Events;
 
 namespace SciSharp.MySQL.Replication
 {

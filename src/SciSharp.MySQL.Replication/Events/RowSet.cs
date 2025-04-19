@@ -1,11 +1,7 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Text;
-using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a set of rows affected by a row-based replication event.

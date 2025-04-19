@@ -1,7 +1,7 @@
 using System;
 using System.Buffers;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Default implementation of the log event factory that creates events of a specified type.

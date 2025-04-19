@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Buffers;
 using System.Globalization;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Types
 {
     /// <summary>
     /// Represents the MySQL DECIMAL data type.

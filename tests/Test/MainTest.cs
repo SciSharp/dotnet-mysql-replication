@@ -8,6 +8,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using SciSharp.MySQL.Replication.Events;
 
 namespace Test
 {

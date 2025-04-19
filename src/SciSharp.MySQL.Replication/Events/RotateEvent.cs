@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Text;
 using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a MySQL ROTATE_EVENT that indicates a switch to a new binary log file.

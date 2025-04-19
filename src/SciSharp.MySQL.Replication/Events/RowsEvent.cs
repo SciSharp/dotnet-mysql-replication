@@ -3,9 +3,9 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using SuperSocket.ProtoBase;
+using SciSharp.MySQL.Replication.Types;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Base class for all row-based replication events (WriteRows, UpdateRows, DeleteRows).

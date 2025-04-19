@@ -1,9 +1,7 @@
 using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using System.Buffers;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Types
 {
     /// <summary>
     /// Represents the MySQL YEAR data type.

@@ -1,6 +1,6 @@
 using System;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Defines the flags used in binary log events.

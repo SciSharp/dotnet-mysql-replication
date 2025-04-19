@@ -1,9 +1,7 @@
 using System;
 using System.Buffers;
-using System.Text;
-using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a MySQL XID_EVENT that marks the end of a transaction that modifies data.

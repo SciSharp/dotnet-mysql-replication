@@ -1,7 +1,7 @@
 using System;
 using System.Buffers;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a placeholder for log event types that have not been implemented yet.

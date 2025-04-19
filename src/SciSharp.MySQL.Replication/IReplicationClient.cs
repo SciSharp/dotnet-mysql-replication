@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using SuperSocket.Client;
+using SciSharp.MySQL.Replication.Events;
 
 namespace SciSharp.MySQL.Replication
 {

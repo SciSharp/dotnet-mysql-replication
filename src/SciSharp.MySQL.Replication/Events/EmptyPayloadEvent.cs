@@ -1,7 +1,7 @@
 using System;
 using System.Buffers;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a log event with an empty payload.

@@ -1,11 +1,6 @@
 using System;
-using System.Buffers;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using SuperSocket.ProtoBase;
 
-namespace SciSharp.MySQL.Replication
+namespace SciSharp.MySQL.Replication.Events
 {
     /// <summary>
     /// Represents a value of a cell in a row, containing both old and new values.
