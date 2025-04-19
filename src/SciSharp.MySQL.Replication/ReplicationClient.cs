@@ -276,9 +276,15 @@ namespace SciSharp.MySQL.Replication
         /// <summary>
         /// Starts receiving log event packages from the server.
         /// </summary>
-        public new void StartReceive()
+        public void StartReceive()
         {
-            base.StartReceive();
+            _ = this.StartReceiveAsync().ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    Logger?.LogError(task.Exception, "Error receiving log event package.");
+                }
+            });
         }
 
         /// <summary>
