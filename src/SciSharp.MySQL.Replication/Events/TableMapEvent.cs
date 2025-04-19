@@ -9,31 +9,65 @@ using SuperSocket.ProtoBase;
 namespace SciSharp.MySQL.Replication
 {
     /// <summary>
+    /// Represents a MySQL TABLE_MAP_EVENT that contains information about a table's structure.
+    /// This event precedes row events and provides metadata needed to interpret the row data.
     /// https://dev.mysql.com/doc/internals/en/table-map-event.html
     /// </summary>
     public sealed class TableMapEvent : LogEvent
     {
+        /// <summary>
+        /// Gets or sets the table ID.
+        /// </summary>
         public long TableID { get; set; }
 
+        /// <summary>
+        /// Gets or sets the database name.
+        /// </summary>
         public string SchemaName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the table name.
+        /// </summary>
         public string TableName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the number of columns in the table.
+        /// </summary>
         public int ColumnCount { get; set; }
 
+        /// <summary>
+        /// Gets or sets the array of column types.
+        /// </summary>
         public byte[] ColumnTypes { get; set; }
 
+        /// <summary>
+        /// Gets or sets the array of metadata for each column.
+        /// </summary>
         public int[] ColumnMetadata { get; set; }        
         
+        /// <summary>
+        /// Gets or sets the bitmap of columns that can be null.
+        /// </summary>
         public BitArray NullBitmap { get; set; }
 
+        /// <summary>
+        /// Gets or sets the metadata of the table.
+        /// </summary>
         public TableMetadata Metadata { get; set; }
         
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TableMapEvent"/> class.
+        /// </summary>
         public TableMapEvent()
         {
             HasCRC = true;
         }
 
+        /// <summary>
+        /// Decodes the body of the event from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <param name="context">The context for decoding.</param>
         protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
             TableID = reader.ReadLong(6);
@@ -71,11 +105,21 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /// <summary>
+        /// Returns a string representation of the TableMapEvent.
+        /// </summary>
+        /// <returns>A string containing the event type, table ID, schema name, table name, and column count.</returns>
         public override string ToString()
         {
             return $"{EventType.ToString()}\r\nTableID: {TableID}\r\nSchemaName: {SchemaName}\r\nTableName: {TableName}\r\nColumnCount: {ColumnCount}";
         }
 
+        /// <summary>
+        /// Reads the metadata for each column from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <param name="columnTypes">The array of column types.</param>
+        /// <returns>An array of metadata for each column.</returns>
         private int[] ReadColumnMetadata(ref SequenceReader<byte> reader, byte[] columnTypes)
         {
             var columnMetadata = new int[columnTypes.Length];
@@ -116,6 +160,11 @@ namespace SciSharp.MySQL.Replication
             return columnMetadata;
         }
 
+        /// <summary>
+        /// Determines whether the specified column type is a numeric column.
+        /// </summary>
+        /// <param name="columnType">The column type to check.</param>
+        /// <returns>True if the column type is numeric; otherwise, false.</returns>
         private bool IsNumberColumn(ColumnType columnType)
         {
             switch (columnType)
@@ -134,6 +183,11 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /// <summary>
+        /// Reads the table metadata from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <returns>The table metadata.</returns>
         private TableMetadata ReadTableMetadata(ref SequenceReader<byte> reader)
         {
             var numericColumnCount = ColumnTypes.Count(c => IsNumberColumn((ColumnType)c));
@@ -162,6 +216,13 @@ namespace SciSharp.MySQL.Replication
             return metadata;
         }
 
+        /// <summary>
+        /// Reads a metadata field from the binary representation.
+        /// </summary>
+        /// <param name="subReader">The sequence reader containing the binary data.</param>
+        /// <param name="fieldType">The type of the metadata field.</param>
+        /// <param name="metadata">The table metadata to update.</param>
+        /// <param name="numericColumnCount">The number of numeric columns.</param>
         private void ReadMetadataField(ref SequenceReader<byte> subReader, MetadataFieldType fieldType, TableMetadata metadata, int numericColumnCount)
         {
             switch (fieldType)
@@ -219,6 +280,11 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /// <summary>
+        /// Reads the type values for ENUM and SET columns from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <returns>A list of string arrays representing the type values.</returns>
         private List<string[]> ReadTypeValues(ref SequenceReader<byte> reader)
         {
             var result = new List<string[]>();
@@ -239,6 +305,11 @@ namespace SciSharp.MySQL.Replication
             return result;
         }
 
+        /// <summary>
+        /// Reads a list of strings from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <returns>A list of strings.</returns>
         private List<string> ReadStringList(ref SequenceReader<byte> reader)
         {
             var list = new List<string>();
@@ -251,6 +322,11 @@ namespace SciSharp.MySQL.Replication
             return list;
         }
 
+        /// <summary>
+        /// Reads a list of integers from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <returns>A list of integers.</returns>
         private List<int> ReadIntegers(ref SequenceReader<byte> reader)
         {
             var charsets = new List<int>();
@@ -263,6 +339,11 @@ namespace SciSharp.MySQL.Replication
             return charsets;
         }
 
+        /// <summary>
+        /// Reads a dictionary of integers from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <returns>A dictionary of integers.</returns>
         private Dictionary<int, int> ReadIntegerDictionary(ref SequenceReader<byte> reader)
         {
             var dict = new Dictionary<int, int>();
@@ -275,6 +356,11 @@ namespace SciSharp.MySQL.Replication
             return dict;
         }
 
+        /// <summary>
+        /// Reads the default charset from the binary representation.
+        /// </summary>
+        /// <param name="reader">The sequence reader containing the binary data.</param>
+        /// <returns>The default charset.</returns>
         private DefaultCharset ReadDefaultCharset(ref SequenceReader<byte> reader)
         {
             var charset = new DefaultCharset();
@@ -290,6 +376,9 @@ namespace SciSharp.MySQL.Replication
             return charset;
         }
 
+        /// <summary>
+        /// Represents the types of metadata fields in a table map event.
+        /// </summary>
         private enum MetadataFieldType : byte
         {
             SIGNEDNESS = 1,                   // Signedness of numeric colums

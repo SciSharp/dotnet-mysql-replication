@@ -10,6 +10,10 @@ using SuperSocket.Client;
 
 namespace SciSharp.MySQL.Replication
 {
+    /// <summary>
+    /// A client that implements MySQL replication protocol to act as a replica.
+    /// This allows reading binary log events from a MySQL server in real-time.
+    /// </summary>
     public class ReplicationClient : EasyClient<LogEvent>, IReplicationClient
     {
         private const byte CMD_DUMP_BINLOG = 0x12;
@@ -26,6 +30,9 @@ namespace SciSharp.MySQL.Replication
 
         private Stream _stream;
 
+        /// <summary>
+        /// Gets or sets the logger for the replication client.
+        /// </summary>
         public new ILogger Logger
         {
             get { return base.Logger; }
@@ -56,12 +63,20 @@ namespace SciSharp.MySQL.Replication
             LogEventPackageDecoder.RegisterLogEventType<XIDEvent>(LogEventType.XID_EVENT);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReplicationClient"/> class.
+        /// </summary>
         public ReplicationClient()
             : base(new LogEventPipelineFilter())
         {
             
         }
 
+        /// <summary>
+        /// Gets the underlying stream from a MySQL connection.
+        /// </summary>
+        /// <param name="connection">The MySQL connection.</param>
+        /// <returns>The stream associated with the connection.</returns>
         private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
         {
             var driverField = connection.GetType().GetField("driver", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -72,6 +87,14 @@ namespace SciSharp.MySQL.Replication
             return baseStreamField.GetValue(handler) as Stream;
         }
 
+        /// <summary>
+        /// Connects to a MySQL server as a replication client.
+        /// </summary>
+        /// <param name="server">The server address.</param>
+        /// <param name="username">The username for authentication.</param>
+        /// <param name="password">The password for authentication.</param>
+        /// <param name="serverId">The server ID to use for this replication client.</param>
+        /// <returns>A task representing the asynchronous operation, with a result indicating whether the login was successful.</returns>
         public async Task<LoginResult> ConnectAsync(string server, string username, string password, int serverId)
         {
             var connString = $"Server={server}; UID={username}; Password={password}";
@@ -129,7 +152,12 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
-        //https://dev.mysql.com/doc/refman/5.6/en/replication-howto-masterstatus.html
+        /// <summary>
+        /// Retrieves the binary log file name and position from the MySQL server.
+        /// https://dev.mysql.com/doc/refman/5.6/en/replication-howto-masterstatus.html
+        /// </summary>
+        /// <param name="mysqlConn">The MySQL connection.</param>
+        /// <returns>A tuple containing the binary log file name and position.</returns>
         private async Task<Tuple<string, int>> GetBinlogFileNameAndPosition(MySqlConnection mysqlConn)
         {
             var cmd = mysqlConn.CreateCommand();
@@ -149,6 +177,11 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /// <summary>
+        /// Retrieves the binary log checksum type from the MySQL server.
+        /// </summary>
+        /// <param name="mysqlConn">The MySQL connection.</param>
+        /// <returns>The checksum type.</returns>
         private async Task<ChecksumType> GetBinlogChecksum(MySqlConnection mysqlConn)
         {
             var cmd = mysqlConn.CreateCommand();
@@ -166,6 +199,11 @@ namespace SciSharp.MySQL.Replication
             }
         }
         
+        /// <summary>
+        /// Confirms the binary log checksum setting on the MySQL server.
+        /// </summary>
+        /// <param name="mysqlConn">The MySQL connection.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         private async ValueTask ConfirmChecksum(MySqlConnection mysqlConn)
         {
             var cmd = mysqlConn.CreateCommand();
@@ -173,9 +211,14 @@ namespace SciSharp.MySQL.Replication
             await cmd.ExecuteNonQueryAsync();
         }
 
-        /*
-        https://dev.mysql.com/doc/internals/en/com-binlog-dump.html
-        */
+        /// <summary>
+        /// Constructs the binary log dump command.
+        /// https://dev.mysql.com/doc/internals/en/com-binlog-dump.html
+        /// </summary>
+        /// <param name="serverId">The server ID.</param>
+        /// <param name="fileName">The binary log file name.</param>
+        /// <param name="position">The position in the binary log file.</param>
+        /// <returns>A memory buffer containing the command.</returns>
         private Memory<byte> GetDumpBinlogCommand(int serverId, string fileName, int position)
         {
             var fixPartSize = 15;
@@ -214,6 +257,14 @@ namespace SciSharp.MySQL.Replication
             return new Memory<byte>(buffer, 0, len);
         }
 
+        /// <summary>
+        /// Starts the binary log dump process.
+        /// </summary>
+        /// <param name="stream">The stream to write the command to.</param>
+        /// <param name="serverId">The server ID.</param>
+        /// <param name="fileName">The binary log file name.</param>
+        /// <param name="position">The position in the binary log file.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         private async ValueTask StartDumpBinlog(Stream stream, int serverId, string fileName, int position)
         {
             var data = GetDumpBinlogCommand(serverId, fileName, position);
@@ -221,16 +272,27 @@ namespace SciSharp.MySQL.Replication
             await stream.FlushAsync();
         }
 
+        /// <summary>
+        /// Starts receiving log event packages from the server.
+        /// </summary>
         public new void StartReceive()
         {
             base.StartReceive();
         }
 
+        /// <summary>
+        /// Receives a log event asynchronously.
+        /// </summary>
+        /// <returns>The received log event.</returns>
         public new ValueTask<LogEvent> ReceiveAsync()
         {
             return base.ReceiveAsync();
         }
 
+        /// <summary>
+        /// Closes the connection to the MySQL server.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public override async ValueTask CloseAsync()
         {
             var connection = _connection;

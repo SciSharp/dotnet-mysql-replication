@@ -7,8 +7,18 @@ using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication
 {
+    /// <summary>
+    /// Extension methods for SequenceReader to help parse MySQL binary log formats.
+    /// </summary>
     public static class SequenceReaderExtensions
     {
+        /// <summary>
+        /// Reads a BitArray from the binary stream.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="length">The number of bits to read.</param>
+        /// <param name="bigEndian">If true, interprets the bits in big-endian order.</param>
+        /// <returns>The BitArray with the read bits.</returns>
         internal static BitArray ReadBitArray(ref this SequenceReader<byte> reader, int length, bool bigEndian = false)
         {
             var dataLen = (length + 7) / 8;
@@ -43,11 +53,24 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /// <summary>
+        /// Reads a string from the binary stream using the specified encoding.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="encoding">The encoding to use.</param>
+        /// <returns>The decoded string.</returns>
         internal static string ReadString(ref this SequenceReader<byte> reader, Encoding encoding)
         {
             return ReadString(ref reader, encoding, out long consumed);
         }
 
+        /// <summary>
+        /// Reads a string from the binary stream using the specified encoding and outputs the number of bytes consumed.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="encoding">The encoding to use.</param>
+        /// <param name="consumed">The number of bytes consumed.</param>
+        /// <returns>The decoded string.</returns>
         internal static string ReadString(ref this SequenceReader<byte> reader, Encoding encoding, out long consumed)
         {
             if (encoding == null)
@@ -71,11 +94,24 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /// <summary>
+        /// Reads a string from the binary stream with a specified length.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="length">The length of the string in bytes.</param>
+        /// <returns>The decoded string.</returns>
         internal static string ReadString(ref this SequenceReader<byte> reader, long length = 0)
         {
             return ReadString(ref reader, Encoding.UTF8, length);
         }
         
+        /// <summary>
+        /// Reads a string from the binary stream using the specified encoding and length.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="encoding">The encoding to use.</param>
+        /// <param name="length">The length of the string in bytes.</param>
+        /// <returns>The decoded string.</returns>
         internal static string ReadString(ref this SequenceReader<byte> reader, Encoding encoding, long length = 0)
         {
             if (length == 0 || reader.Remaining <= length)
@@ -96,6 +132,12 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
+        /// <summary>
+        /// Reads a fixed-length integer from the binary stream.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="length">The number of bytes to read (1-4).</param>
+        /// <returns>The decoded integer value.</returns>
         internal static int ReadInteger(ref this SequenceReader<byte> reader, int length)
         {
             if (length > 4)
@@ -114,6 +156,12 @@ namespace SciSharp.MySQL.Replication
             return value;
         }
 
+        /// <summary>
+        /// Reads a big-endian integer from the binary stream.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="length">The number of bytes to read (1-4).</param>
+        /// <returns>The decoded integer value.</returns>
         internal static int ReadBigEndianInteger(ref this SequenceReader<byte> reader, int length)
         {
             if (length > 4)
@@ -131,6 +179,12 @@ namespace SciSharp.MySQL.Replication
             return value;
         }
 
+        /// <summary>
+        /// Reads a fixed-length long integer from the binary stream.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="length">The number of bytes to read (1-8).</param>
+        /// <returns>The decoded long integer value.</returns>
         internal static long ReadLong(ref this SequenceReader<byte> reader, int length)
         {
             var unit = 1;
@@ -146,11 +200,22 @@ namespace SciSharp.MySQL.Replication
             return value;
         }
 
+        /// <summary>
+        /// Reads a length-encoded string from the binary stream.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <returns>The decoded string.</returns>
         internal static string ReadLengthEncodedString(ref this SequenceReader<byte> reader)
         {
             return ReadLengthEncodedString(ref reader, Encoding.UTF8);
         }
 
+        /// <summary>
+        /// Reads a length-encoded string from the binary stream using the specified encoding.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <param name="encoding">The encoding to use.</param>
+        /// <returns>The decoded string.</returns>
         internal static string ReadLengthEncodedString(ref this SequenceReader<byte> reader, Encoding encoding)
         {
             var len = reader.ReadLengthEncodedInteger();
@@ -164,6 +229,11 @@ namespace SciSharp.MySQL.Replication
             return ReadString(ref reader, encoding, len);
         }
 
+        /// <summary>
+        /// Reads a length-encoded integer from the binary stream.
+        /// </summary>
+        /// <param name="reader">The sequence reader.</param>
+        /// <returns>The decoded integer value.</returns>
         internal static long ReadLengthEncodedInteger(ref this SequenceReader<byte> reader)
         {
             reader.TryRead(out byte b0);

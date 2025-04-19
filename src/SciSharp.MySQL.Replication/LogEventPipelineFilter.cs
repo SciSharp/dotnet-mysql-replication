@@ -5,11 +5,16 @@ using SuperSocket.ProtoBase;
 namespace SciSharp.MySQL.Replication
 {
     /// <summary>
+    /// Pipeline filter that processes MySQL binary log event data from a network stream.
+    /// This class is responsible for extracting complete log events from the stream.
     /// https://dev.mysql.com/doc/internals/en/binlog-event.html
     /// https://dev.mysql.com/doc/internals/en/binlog-event-header.html
     /// </summary>
     public class LogEventPipelineFilter : FixedHeaderPipelineFilter<LogEvent>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LogEventPipelineFilter"/> class.
+        /// </summary>
         public LogEventPipelineFilter()
             : base(3)
         {
@@ -17,6 +22,11 @@ namespace SciSharp.MySQL.Replication
             Context = new ReplicationState();
         }
 
+        /// <summary>
+        /// Gets the body length of a MySQL packet from its header.
+        /// </summary>
+        /// <param name="buffer">The buffer containing the packet header.</param>
+        /// <returns>The length of the packet body.</returns>
         protected override int GetBodyLengthFromHeader(ref ReadOnlySequence<byte> buffer)
         {
             var reader = new SequenceReader<byte>(buffer);            
