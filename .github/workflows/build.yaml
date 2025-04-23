@@ -31,7 +31,7 @@ jobs:
                 cp tests/Test/mysql.cnf ~/.my.cnf
                 sudo systemctl start mysql.service
                 mysql -e "SET PERSIST binlog_row_metadata = 'FULL';" -uroot -proot
-                mysql -e tests/Test/dump.sql -uroot -proot
+                mysql -uroot -proot < tests/Test/dump.sql
             - name: Test
               run: |
                 cd tests/Test
