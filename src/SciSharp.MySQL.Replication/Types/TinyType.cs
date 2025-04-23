@@ -20,7 +20,7 @@ namespace SciSharp.MySQL.Replication.Types
         public object ReadValue(ref SequenceReader<byte> reader, int meta)
         {
             reader.TryRead(out byte x);
-            return x;
+            return (SByte)x;
         }
     }
 }
