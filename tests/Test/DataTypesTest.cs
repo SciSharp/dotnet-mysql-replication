@@ -19,7 +19,7 @@ namespace Test
     [Trait("Category", "DataTypes")]
     public class DataTypesTest : IClassFixture<MySQLFixture>
     {
-        protected readonly MySQLFixture _mysqlFixture;
+        private readonly MySQLFixture _mysqlFixture;
 
         public DataTypesTest(MySQLFixture mysqlFixture)
         {
