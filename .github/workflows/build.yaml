@@ -29,6 +29,7 @@ jobs:
             - name: Run MySQL
               run: |
                 cp tests/Test/mysql.cnf ~/.my.cnf
+                mkdir /docker-entrypoint-initdb.d
                 cp tests/Test/dump.sql /docker-entrypoint-initdb.d/dump.sql
                 sudo systemctl start mysql.service
                 mysql -e "SET PERSIST binlog_row_metadata = 'FULL';" -uroot -proot
