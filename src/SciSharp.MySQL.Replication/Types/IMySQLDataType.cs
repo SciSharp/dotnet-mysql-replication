@@ -14,8 +14,8 @@ namespace SciSharp.MySQL.Replication.Types
         /// Reads a value from the sequence reader based on the metadata.
         /// </summary>
         /// <param name="reader">The sequence reader containing binary data.</param>
-        /// <param name="meta">Metadata that describes the data format.</param>
+        /// <param name="columnMetadata">Metadata for the column being read.</param>
         /// <returns>The deserialized object value.</returns>
-        object ReadValue(ref SequenceReader<byte> reader, int meta);
+        object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata);
     }
 }

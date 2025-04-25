@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SciSharp.MySQL.Replication.Types;
 using SuperSocket.ProtoBase;
 
 namespace SciSharp.MySQL.Replication.Events
@@ -99,6 +100,16 @@ namespace SciSharp.MySQL.Replication.Events
 
             Metadata = ReadTableMetadata(ref reader);
 
+            foreach (var columnMetadata in Metadata.Columns)
+            {
+                var valueTypeIndex = (int)columnMetadata.Type;
+
+                if (valueTypeIndex < DataTypes.Length && DataTypes[valueTypeIndex] is IColumnMetadataLoader columnMetadataLoader)
+                {
+                    columnMetadataLoader.LoadMetadataValue(columnMetadata);
+                }
+            }
+
             if (context is ReplicationState repState)
             {
                 repState.TableMap[TableID] = this;
@@ -161,36 +172,13 @@ namespace SciSharp.MySQL.Replication.Events
         }
 
         /// <summary>
-        /// Determines whether the specified column type is a numeric column.
-        /// </summary>
-        /// <param name="columnType">The column type to check.</param>
-        /// <returns>True if the column type is numeric; otherwise, false.</returns>
-        private bool IsNumberColumn(ColumnType columnType)
-        {
-            switch (columnType)
-            {
-                case ColumnType.TINY:
-                case ColumnType.SHORT:
-                case ColumnType.INT24:
-                case ColumnType.LONG:
-                case ColumnType.LONGLONG:
-                case ColumnType.NEWDECIMAL:
-                case ColumnType.FLOAT:
-                case ColumnType.DOUBLE:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        /// <summary>
         /// Reads the table metadata from the binary representation.
         /// </summary>
         /// <param name="reader">The sequence reader containing the binary data.</param>
         /// <returns>The table metadata.</returns>
         private TableMetadata ReadTableMetadata(ref SequenceReader<byte> reader)
         {
-            var numericColumnCount = ColumnTypes.Count(c => IsNumberColumn((ColumnType)c));
+            var numericColumnCount = ColumnTypes.Count(c => ((ColumnType)c).IsNumberColumn());
 
             var metadata = new TableMetadata();
 
@@ -212,6 +200,8 @@ namespace SciSharp.MySQL.Replication.Events
                     reader.Advance(length);
                 }
             }
+
+            metadata.BuildColumnMetadataList(ColumnTypes.Select(c => (ColumnType)c).ToArray(), ColumnMetadata);
 
             return metadata;
         }

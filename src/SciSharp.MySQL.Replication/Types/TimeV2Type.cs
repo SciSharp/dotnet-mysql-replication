@@ -17,10 +17,10 @@ namespace SciSharp.MySQL.Replication.Types
         /// Reads a TIME2 value from the binary log.
         /// </summary>
         /// <param name="reader">The sequence reader containing the bytes to read.</param>
-        /// <param name="meta">Metadata for the column defining fractional second precision.</param>
+        /// <param name="columnMetadata">Metadata for the column defining fractional second precision.</param>
         /// <returns>An object representing the MySQL TIME2 value.</returns>
         /// <exception cref="NotImplementedException">This method has not yet been implemented.</exception>
-        public object ReadValue(ref SequenceReader<byte> reader, int meta)
+        public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
             throw new NotImplementedException();
         }

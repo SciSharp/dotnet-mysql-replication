@@ -48,7 +48,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestBigIntType()
         {
             var currentValue = 9223372036854775800L;
@@ -88,7 +88,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestVarCharType()
         {
             var currentValue = "Hello World";
@@ -175,7 +175,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestEnumType()
         {
             var currentValue = "SMALL";
@@ -185,7 +185,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestSetType()
         {
             var currentValue = "RED,GREEN";

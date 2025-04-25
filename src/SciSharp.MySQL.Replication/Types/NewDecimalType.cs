@@ -18,9 +18,9 @@ namespace SciSharp.MySQL.Replication.Types
         /// Reads a DECIMAL value from the binary log.
         /// </summary>
         /// <param name="reader">The sequence reader containing the bytes to read.</param>
-        /// <param name="meta">Metadata for the column.</param>
+        /// <param name="columnMetadata">Metadata for the column.</param>
         /// <returns>A decimal value representing the MySQL DECIMAL value.</returns>
-        public object ReadValue(ref SequenceReader<byte> reader, int meta)
+        public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
             return decimal.Parse(reader.ReadLengthEncodedString(), CultureInfo.InvariantCulture);
         }

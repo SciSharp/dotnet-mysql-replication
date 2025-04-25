@@ -17,11 +17,11 @@ namespace SciSharp.MySQL.Replication.Types
         /// Reads a BLOB value from the binary log.
         /// </summary>
         /// <param name="reader">The sequence reader containing the bytes to read.</param>
-        /// <param name="meta">Metadata for the column.</param>
+        /// <param name="columnMetadata">Metadata for the column.</param>
         /// <returns>A byte array representing the MySQL BLOB value.</returns>
-        public object ReadValue(ref SequenceReader<byte> reader, int meta)
+        public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            int blobLength = reader.ReadInteger(meta);
+            int blobLength = reader.ReadInteger(columnMetadata.MetadataValue);
 
             try
             {

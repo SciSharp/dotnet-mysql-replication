@@ -17,11 +17,19 @@ namespace SciSharp.MySQL.Replication.Types
         /// Reads an ENUM value from the binary log.
         /// </summary>
         /// <param name="reader">The sequence reader containing the bytes to read.</param>
-        /// <param name="meta">Metadata for the column.</param>
+        /// <param name="columnMetadata">Metadata for the column.</param>
         /// <returns>An integer representing the index of the ENUM value.</returns>
-        public object ReadValue(ref SequenceReader<byte> reader, int meta)
+        public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            return reader.ReadInteger(2);
+            var enumIndex = reader.ReadInteger(2);
+
+            // Out of range check
+            if (enumIndex >= columnMetadata.EnumValues.Count)
+            {
+                return null;
+            }
+
+            return columnMetadata.EnumValues[enumIndex];
         }
     }
 }
