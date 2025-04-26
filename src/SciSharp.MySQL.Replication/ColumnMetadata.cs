@@ -20,7 +20,7 @@ namespace SciSharp.MySQL.Replication
             /// <summary>
             /// Gets or sets the metadata value associated with the column.
             /// </summary>
-            public short MetadataValue { get; set; }
+            public ushort MetadataValue { get; set; }
 
             /// <summary>
             /// Gets or sets the column max value length.

@@ -11,17 +11,24 @@ namespace SciSharp.MySQL.Replication.Types
     /// <remarks>
     /// Handles the reading and conversion of MySQL ENUM values.
     /// </remarks>
-    class EnumType : IMySQLDataType
+    class EnumType : IMySQLDataType, IColumnMetadataLoader
     {
+        public void LoadMetadataValue(ColumnMetadata columnMetadata)
+        {
+            columnMetadata.MaxLength = columnMetadata.MetadataValue & 0xFF;
+        }
+
         /// <summary>
         /// Reads an ENUM value from the binary log.
         /// </summary>
         /// <param name="reader">The sequence reader containing the bytes to read.</param>
         /// <param name="columnMetadata">Metadata for the column.</param>
         /// <returns>An integer representing the index of the ENUM value.</returns>
-        public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
+        public virtual object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            var enumIndex = reader.ReadInteger(2);
+            var enumIndex = columnMetadata.MaxLength == 1
+                ? reader.TryRead(out byte l) ? (int)l : 0
+                : reader.TryReadLittleEndian(out short sl) ? (int)sl : 0;
 
             // Out of range check
             if (enumIndex >= columnMetadata.EnumValues.Count)
@@ -29,7 +36,12 @@ namespace SciSharp.MySQL.Replication.Types
                 return null;
             }
 
-            return columnMetadata.EnumValues[enumIndex];
+            if (enumIndex == 0)
+            {
+                return string.Empty;
+            }
+
+            return columnMetadata.EnumValues[enumIndex - 1];
         }
     }
 }

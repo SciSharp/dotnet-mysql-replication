@@ -89,25 +89,16 @@ namespace SciSharp.MySQL.Replication
         {
             var columnMetadatas = new List<ColumnMetadata>(ColumnNames.Count);
 
-            var numericColumnIndex = -1;
-
             for (int i = 0; i < columnTypes.Count; i++)
             {
                 var columnType = columnTypes[i];
-                var isNumberColumn = columnType.IsNumberColumn();
-                numericColumnIndex++;
 
                 var columnMetadata = new ColumnMetadata
                 {
                     Name = ColumnNames[i],
                     Type = columnType,
                     CharsetId = ColumnCharsets != null ? ColumnCharsets[i] : 0,
-                    //If the bit is set (1), the column is UNSIGNED; if not set (0), it's SIGNED (default)
-                    IsUnsigned = isNumberColumn ? Signedness[numericColumnIndex] : false,
-                    EnumValues = EnumStrValues != null ? EnumStrValues[i] : null,
-                    SetValues = SetStrValues != null  ? SetStrValues[i] : null,
-                    MetadataValue = (short)columnMetadataValues[i],
-                    NumericColumnIndex = isNumberColumn ? numericColumnIndex : -1
+                    MetadataValue = (ushort)columnMetadataValues[i]
                 };
                 
                 columnMetadatas.Add(columnMetadata);

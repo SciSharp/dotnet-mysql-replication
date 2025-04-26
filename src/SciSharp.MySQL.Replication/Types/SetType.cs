@@ -10,8 +10,13 @@ namespace SciSharp.MySQL.Replication.Types
     /// <remarks>
     /// Handles the reading and conversion of MySQL SET values.
     /// </remarks>
-    class SetType : IMySQLDataType
+    class SetType : IMySQLDataType, IColumnMetadataLoader
     {
+        public void LoadMetadataValue(ColumnMetadata columnMetadata)
+        {
+            columnMetadata.MaxLength = columnMetadata.MetadataValue & 0xFF;
+        }
+
         /// <summary>
         /// Reads a SET value from the binary log.
         /// </summary>
@@ -20,18 +25,18 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>A long value representing the MySQL SET value as a bitmap.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            var setValue = reader.ReadLong(4);
+            var flags = reader.ReadLong(columnMetadata.MaxLength);
 
-            if (setValue == 0)
+            if (flags == 0)
             {
-                return 0;
+                return string.Empty;
             }
 
             var setCellValues = new List<string>();
 
             for (int i = 0; i < columnMetadata.SetValues.Count; i++)
             {
-                if ((setValue & (1 << i)) != 0)
+                if ((flags & (1 << i)) != 0)
                 {
                     setCellValues.Add(columnMetadata.SetValues[i]);
                 }

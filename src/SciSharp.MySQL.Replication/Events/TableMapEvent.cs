@@ -55,6 +55,13 @@ namespace SciSharp.MySQL.Replication.Events
         /// Gets or sets the metadata of the table.
         /// </summary>
         public TableMetadata Metadata { get; set; }
+
+        private readonly IReadOnlyList<ITableMetadataInitializer> _tableMetadataInitializers = new List<ITableMetadataInitializer>
+        {
+            new NumericTypeTableMetadataInitializer(),
+            new EnumTypeTableMetadataInitializer(),
+            new SetTypeTableMetadataInitializer()
+        };
         
         /// <summary>
         /// Initializes a new instance of the <see cref="TableMapEvent"/> class.
@@ -99,6 +106,11 @@ namespace SciSharp.MySQL.Replication.Events
             RebuildReaderAsCRC(ref reader);
 
             Metadata = ReadTableMetadata(ref reader);
+
+            foreach (var tableMetadataInitializer in _tableMetadataInitializers)
+            {
+                tableMetadataInitializer.InitializeMetadata(Metadata);
+            }
 
             foreach (var columnMetadata in Metadata.Columns)
             {
