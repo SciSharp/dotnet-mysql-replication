@@ -232,10 +232,9 @@ namespace SciSharp.MySQL.Replication.Events
                 if (nullColumns.Get(index))
                     continue;
 
-                var typeCode = columnTypes[i];
                 var columnMetadata = table.Metadata.Columns[i];
 
-                cells[index] = ReadCell(ref reader, (ColumnType)typeCode, columnMetadata);
+                cells[index] = ReadCell(ref reader, (ColumnType)(columnMetadata.UnderlyingType ?? columnMetadata.Type), columnMetadata);
             }
 
             return cells;

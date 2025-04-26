@@ -11,7 +11,7 @@ namespace SciSharp.MySQL.Replication.Types
     /// <remarks>
     /// Handles the reading and conversion of MySQL STRING values.
     /// </remarks>
-    class StringType : EnumType
+    class StringType : IMySQLDataType
     {
         /// <summary>
         /// Reads a STRING value from the binary log.
@@ -19,11 +19,8 @@ namespace SciSharp.MySQL.Replication.Types
         /// <param name="reader">The sequence reader containing the bytes to read.</param>
         /// <param name="columnMetadata">Metadata for the column.</param>
         /// <returns>A string representing the MySQL STRING value.</returns>
-        public override object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
+        public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            if (columnMetadata.MaxLength < 3)
-                return base.ReadValue(ref reader, columnMetadata);
-            
             return reader.ReadLengthEncodedString();
         }
     }

@@ -18,6 +18,11 @@ namespace SciSharp.MySQL.Replication
             public ColumnType Type { get; set; }
 
             /// <summary>
+            /// Gets or sets the underlying type of the column.
+            /// </summary>
+            public ColumnType? UnderlyingType { get; set; }
+
+            /// <summary>
             /// Gets or sets the metadata value associated with the column.
             /// </summary>
             public ushort MetadataValue { get; set; }

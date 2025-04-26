@@ -114,7 +114,7 @@ namespace SciSharp.MySQL.Replication.Events
 
             foreach (var columnMetadata in Metadata.Columns)
             {
-                var valueTypeIndex = (int)columnMetadata.Type;
+                var valueTypeIndex = (int) (columnMetadata.UnderlyingType ?? columnMetadata.Type);
 
                 if (valueTypeIndex < DataTypes.Length && DataTypes[valueTypeIndex] is IColumnMetadataLoader columnMetadataLoader)
                 {
