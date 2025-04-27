@@ -32,8 +32,8 @@ namespace SciSharp.MySQL.Replication.Types
             };
 
             // Calculate storage size (MySQL packs 9 digits into 4 bytes)
-            decimalOptions.IntegerBytes = (decimalOptions.Precision - decimalOptions.Scale + 8) / 9 * 4;
-            decimalOptions.FractionBytes = (decimalOptions.Scale + 8) / 9 * 4;
+            decimalOptions.IntegerBytes = CalculateByteCount(decimalOptions.Precision - decimalOptions.Scale);
+            decimalOptions.FractionBytes = CalculateByteCount(decimalOptions.Scale);
 
             columnMetadata.Options = decimalOptions;
         }
@@ -49,34 +49,32 @@ namespace SciSharp.MySQL.Replication.Types
             var options = columnMetadata.Options as DecimalOptions;
 
             reader.TryPeek(out byte signByte);
-            bool negative = (signByte & 0x80) == 0x80;
+            bool negative = (signByte & 0x80) == 0x00;
+            signByte ^= 0x80;
 
             // Read integer part
-            var intPart = ReadCompactDecimal(ref reader, (int)Math.Min(options.IntegerBytes, reader.Remaining), true);
-            
-            // Read fraction part
-            var fracPart = ReadCompactDecimal(ref reader, (int)Math.Min(options.FractionBytes, reader.Remaining), false);
+            var intPart = ReadCompactDecimal(ref reader, options.IntegerBytes, negative, signByte);
+
+            // Read integer part
+            var fractionPart = ReadCompactDecimal(ref reader, options.FractionBytes, negative);
 
             // Convert to decimal using direct decimal operations
-            decimal intDecimal = (decimal)intPart;
-            
-            // Calculate the fractional part as decimal
-            decimal fracDecimal = 0;
+            decimal fraction = (decimal)fractionPart;
 
-            if (fracPart > 0)
+            if (options.Scale > 0)
             {
                 // Create the appropriate scaling factor based on the scale
                 decimal scaleFactor = (decimal)Math.Pow(10, options.Scale);
-                fracDecimal = (decimal)fracPart / scaleFactor;
+                fraction = fraction / scaleFactor;
             }
 
-            var result = intDecimal + fracDecimal;
+            var result = (decimal)intPart + fraction;
 
             // Apply sign
             return negative ? -result : result;
         }
 
-        private static BigInteger ReadCompactDecimal(ref SequenceReader<byte> reader, int byteCount, bool isIntegerPart)
+        private static BigInteger ReadCompactDecimal(ref SequenceReader<byte> reader, int byteCount, bool flip, byte? signByteOverride = null)
         {
             if (byteCount == 0)
                 return BigInteger.Zero;
@@ -86,8 +84,8 @@ namespace SciSharp.MySQL.Replication.Types
             reader.Advance(byteCount);
             
             // Handle sign bit in the integer part
-            if (isIntegerPart)
-                bytes[0] &= 0x7F;  // Clear the sign bit
+            if (signByteOverride.HasValue)
+                bytes[0] = signByteOverride.Value;
             
             // Process each 4-byte group
             BigInteger result = BigInteger.Zero;
@@ -100,7 +98,12 @@ namespace SciSharp.MySQL.Replication.Types
                 // Combine bytes in group (big-endian within the group)
                 for (int j = 0; j < groupSize; j++)
                 {
-                    value = (value << 8) | bytes[i + j];
+                    var cellValue = bytes[i + j];
+
+                    if (flip)
+                        cellValue = (byte)(~cellValue);
+
+                    value = (value << 8) | cellValue;
                 }
                 
                 // Each group represents a specific number of decimal digits
@@ -109,6 +112,14 @@ namespace SciSharp.MySQL.Replication.Types
             }
             
             return result;
+        }
+
+        private int CalculateByteCount(int digits)
+        {
+            if (digits == 0)
+                return 0;
+
+            return digits / 9 * 4 + (digits % 9 / 2) + (digits % 2);
         }
 
         class DecimalOptions

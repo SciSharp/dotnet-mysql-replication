@@ -98,10 +98,16 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestDecimalType()
         {
             var currentValue = 123.45m;
+            await TestDataType<decimal>("decimal_table", currentValue, currentValue + 10.55m, (reader, index) =>
+            {
+                return reader.GetDecimal(index);
+            });
+
+            currentValue = -123.45m;
             await TestDataType<decimal>("decimal_table", currentValue, currentValue + 10.55m, (reader, index) =>
             {
                 return reader.GetDecimal(index);
