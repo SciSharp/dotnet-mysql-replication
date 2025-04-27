@@ -133,7 +133,7 @@ namespace SciSharp.MySQL.Replication
         }
 
         /// <summary>
-        /// Reads a fixed-length integer from the binary stream.
+        /// Reads a fixed-length unsigned integer from the binary stream.
         /// </summary>
         /// <param name="reader">The sequence reader.</param>
         /// <param name="length">The number of bytes to read (1-4).</param>

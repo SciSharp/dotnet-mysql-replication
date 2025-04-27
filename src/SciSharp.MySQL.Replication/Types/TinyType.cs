@@ -20,7 +20,9 @@ namespace SciSharp.MySQL.Replication.Types
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
             reader.TryRead(out byte x);
-            return (SByte)x;
+            return columnMetadata.IsUnsigned
+                ? x
+                : (sbyte)x;
         }
     }
 }

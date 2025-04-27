@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Buffers;
+using System.Buffers.Binary;
 
 namespace SciSharp.MySQL.Replication.Types
 {
@@ -21,7 +22,14 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>An integer representing the MySQL INT value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            return reader.ReadInteger(4);
+            Span<byte> buffer = stackalloc byte[sizeof(int)];
+
+            reader.TryCopyTo(buffer);
+            reader.Advance(sizeof(int));
+
+            return columnMetadata.IsUnsigned
+                ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
+                : BinaryPrimitives.ReadInt32LittleEndian(buffer);
         }
     }
 }
