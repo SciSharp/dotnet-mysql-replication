@@ -58,8 +58,8 @@ namespace SciSharp.MySQL.Replication
             public bool IsUnsigned { get; set; }
 
             /// <summary>
-            /// Gets or sets the column index in all the numerci columns.
+            /// Gets or sets the additional options of this column.
             /// </summary>
-            public int NumericColumnIndex { get; set; }
+            public object Options { get; set; }
         }
 }

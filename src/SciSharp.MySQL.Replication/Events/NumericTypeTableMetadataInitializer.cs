@@ -15,8 +15,6 @@ namespace SciSharp.MySQL.Replication.Events
                     continue;
 
                 column.IsUnsigned = metadata.Signedness[numericColumnIndex];
-                column.NumericColumnIndex = numericColumnIndex;
-
                 numericColumnIndex++;
             }
         }
