@@ -66,28 +66,19 @@ namespace Test
             cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death, timeUpdated) values ('Rokie', 'Kerry', 'abc', 'F', '1992-05-20', '3000-01-01', now()); SELECT LAST_INSERT_ID();";
             var id = (UInt64)(await cmd.ExecuteScalarAsync());
 
-            while (true)
-            {
-                var eventLog = await _mysqlFixture.Client.ReceiveAsync();
+            var eventLog = await _mysqlFixture.ReceiveAsync<WriteRowsEvent>();
 
-                if (eventLog.EventType == LogEventType.WRITE_ROWS_EVENT)
-                {
-                    var log = eventLog as WriteRowsEvent;
-                    Assert.NotNull(log);
+            Assert.NotNull(eventLog);
 
-                    var rows = log.RowSet.ToReadableRows();
-                    Assert.Equal(1, rows.Count);
+            var rows = eventLog.RowSet.ToReadableRows();
+            Assert.Equal(1, rows.Count);
 
-                    var row = rows[0];
+            var row = rows[0];
 
-                    Assert.Equal("Rokie", row["name"]);
-                    Assert.Equal("Kerry", row["owner"]);
-                    Assert.Equal("abc", row["species"]);
-                    Assert.Equal("F", row["sex"]);
-
-                    break;
-                }
-            }
+            Assert.Equal("Rokie", row["name"]);
+            Assert.Equal("Kerry", row["owner"]);
+            Assert.Equal("abc", row["species"]);
+            Assert.Equal("F", row["sex"]);
         }
 
         [Fact]
@@ -123,35 +114,29 @@ namespace Test
             cmd.CommandText = "update pet set owner='Linda', timeUpdated=now() where `id`=" + id;
             await cmd.ExecuteNonQueryAsync();
 
-            while (true)
+            var eventLog = await _mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
+
+            _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
+            
+            if (eventLog.EventType == LogEventType.UPDATE_ROWS_EVENT)
             {
-                var eventLog = await _mysqlFixture.Client.ReceiveAsync();
+                Assert.NotNull(eventLog);
 
-                _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
-                
-                if (eventLog.EventType == LogEventType.UPDATE_ROWS_EVENT)
-                {
-                    var log = eventLog as UpdateRowsEvent;
-                    Assert.NotNull(log);
+                var rows = eventLog.RowSet.ToReadableRows();
+                Assert.Equal(1, rows.Count);
 
-                    var rows = log.RowSet.ToReadableRows();
-                    Assert.Equal(1, rows.Count);
+                var row = rows[0];
 
-                    var row = rows[0];
+                var cellValue = row["id"] as CellValue;
 
-                    var cellValue = row["id"] as CellValue;
+                Assert.Equal(id, cellValue.OldValue);
+                Assert.Equal(id, cellValue.NewValue);
 
-                    Assert.Equal(id, cellValue.OldValue);
-                    Assert.Equal(id, cellValue.NewValue);
+                cellValue = row["owner"] as CellValue;
 
-                    cellValue = row["owner"] as CellValue;
-
-                    Assert.Equal("Kerry", oldValues["owner"]);
-                    Assert.Equal("Kerry", cellValue.OldValue);
-                    Assert.Equal("Linda", cellValue.NewValue);
-
-                    break;
-                }
+                Assert.Equal("Kerry", oldValues["owner"]);
+                Assert.Equal("Kerry", cellValue.OldValue);
+                Assert.Equal("Linda", cellValue.NewValue);
             }
         }
     }
