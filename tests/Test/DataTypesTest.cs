@@ -243,7 +243,7 @@ namespace Test
             command.CommandText = $"select value from {tableName} where id = @id";
             command.Parameters.AddWithValue("@id", id);
 
-            MySqlDataReader reader = await command.ExecuteReaderAsync() as MySqlDataReader;
+            using var reader = await command.ExecuteReaderAsync() as MySqlDataReader;
 
             Assert.True(await reader.ReadAsync());
 
