@@ -200,6 +200,14 @@ namespace SciSharp.MySQL.Replication
             return value;
         }
 
+        internal static ushort ReadLittleEndianShort(ref this SequenceReader<byte> reader)
+        {
+            reader.TryRead(out byte b0);
+            reader.TryRead(out byte b1);
+
+            return (ushort) (b1 << 8 | b0);
+        }
+
         /// <summary>
         /// Reads a length-encoded string from the binary stream.
         /// </summary>

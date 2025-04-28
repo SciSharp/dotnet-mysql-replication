@@ -17,7 +17,9 @@ namespace Test
 
         public IReplicationClient Client { get; private set; }
 
-        public MySQLFixture()
+        public static MySQLFixture Instance { get; } = new MySQLFixture();
+
+        private MySQLFixture()
         {
             _connection = new MySqlConnection($"Server={_host};Database=garden;Uid={_username};Pwd={_password};");
             Client = new ReplicationClient();

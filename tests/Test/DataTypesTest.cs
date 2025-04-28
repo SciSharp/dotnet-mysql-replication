@@ -17,14 +17,9 @@ using System.Globalization;
 namespace Test
 {
     [Trait("Category", "DataTypes")]
-    public class DataTypesTest : IClassFixture<MySQLFixture>
+    public class DataTypesTest
     {
-        private readonly MySQLFixture _mysqlFixture;
-
-        public DataTypesTest(MySQLFixture mysqlFixture)
-        {
-            _mysqlFixture = mysqlFixture;
-        }
+        private readonly MySQLFixture _mysqlFixture = MySQLFixture.Instance;
 
         [Fact]
         public async Task TestDateTimeType()

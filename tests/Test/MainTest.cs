@@ -13,18 +13,17 @@ using SciSharp.MySQL.Replication.Events;
 namespace Test
 {
     [Trait("Category", "Replication")]
-    public class MainTest : IClassFixture<MySQLFixture>
+    public class MainTest
     {
-        private readonly MySQLFixture _mysqlFixture;
+        private readonly MySQLFixture _mysqlFixture = MySQLFixture.Instance;
 
         protected readonly ITestOutputHelper _outputHelper;
 
         private readonly ILogger _logger;
 
-        public MainTest(ITestOutputHelper outputHelper, MySQLFixture mysqlFixture)
+        public MainTest(ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
-            _mysqlFixture = mysqlFixture;
             using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
             _logger = loggerFactory.CreateLogger<MainTest>();
         }
@@ -47,15 +46,17 @@ namespace Test
             cmd.CommandText = "delete from pet where `id`= " + id;
             await cmd.ExecuteNonQueryAsync();
 
-            while (true)
-            {
-                var eventLog = await _mysqlFixture.Client.ReceiveAsync();
-                Assert.NotNull(eventLog);
-                _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
+            RowsEvent eventLog = await _mysqlFixture.ReceiveAsync<WriteRowsEvent>();
+            Assert.NotNull(eventLog);
+            _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
 
-                if (eventLog is DeleteRowsEvent)
-                    break;
-            }
+            eventLog = await _mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
+            Assert.NotNull(eventLog);
+            _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
+
+            eventLog = await _mysqlFixture.ReceiveAsync<DeleteRowsEvent>();
+            Assert.NotNull(eventLog);
+            _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
         }
 
         [Fact]

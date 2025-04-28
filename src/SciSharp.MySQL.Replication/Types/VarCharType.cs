@@ -18,16 +18,13 @@ namespace SciSharp.MySQL.Replication.Types
     {
         public void LoadMetadataValue(ColumnMetadata columnMetadata)
         {
-            var firstByte = columnMetadata.MetadataValue / 256;
-
-            if (firstByte < 255)
+            if (columnMetadata.MetadataValue.Length == 1)
             {
-                columnMetadata.MaxLength = firstByte;
+                columnMetadata.MaxLength = (int)columnMetadata.MetadataValue[0];
             }
             else
             {
-                var secondByte = columnMetadata.MetadataValue % 256;
-                columnMetadata.MaxLength = secondByte * 256;
+                columnMetadata.MaxLength = (int)columnMetadata.MetadataValue[1] * 256 + (int)columnMetadata.MetadataValue[0];
             }
         }
 
@@ -39,7 +36,8 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>A string representing the MySQL VARCHAR value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            var length = columnMetadata.MaxLength < 255
+            var lenBytes = columnMetadata.MaxLength < 256 ? 1 : 2;
+            var length = lenBytes == 1
                 ? reader.TryRead(out byte len1) ? len1 : 0
                 : reader.TryReadLittleEndian(out short len2) ? len2 : 0;
 
@@ -48,7 +46,14 @@ namespace SciSharp.MySQL.Replication.Types
             
             try
             {
-                reader.TryRead(out byte _); // \0
+                if (lenBytes == 1)
+                {
+                    if (reader.TryPeek(out byte checkByte) && checkByte == 0x00)
+                    {
+                        reader.Advance(1);
+                    }
+                }
+
                 return reader.UnreadSequence.Slice(0, length).GetString(Encoding.UTF8);
             }
             finally

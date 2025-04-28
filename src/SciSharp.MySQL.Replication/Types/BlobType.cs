@@ -21,7 +21,7 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>A byte array representing the MySQL BLOB value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            int blobLength = reader.ReadInteger(columnMetadata.MetadataValue);
+            int blobLength = reader.ReadInteger(columnMetadata.MetadataValue[0]);
 
             try
             {

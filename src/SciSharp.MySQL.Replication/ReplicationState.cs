@@ -13,5 +13,10 @@ namespace SciSharp.MySQL.Replication
         /// Gets or sets the dictionary mapping table IDs to their corresponding TableMapEvent objects.
         /// </summary>
         public Dictionary<long, TableMapEvent> TableMap { get; set; } = new Dictionary<long, TableMapEvent>();
+
+        /// <summary>
+        /// Gets or sets the dictionary mapping table IDs to their corresponding TableSchema objects.
+        /// </summary>
+        public Dictionary<string, TableSchema> TableSchemaMap { get; set; } = new Dictionary<string, TableSchema>(StringComparer.OrdinalIgnoreCase);
     }
 }

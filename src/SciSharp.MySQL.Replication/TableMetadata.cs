@@ -85,7 +85,7 @@ namespace SciSharp.MySQL.Replication
         /// </summary>
         /// <param name="columnTypes">The column types.</param>
         /// <param name="columnMetadataValues">The metadata values for each column.</param>
-        public void BuildColumnMetadataList(IReadOnlyList<ColumnType> columnTypes, IReadOnlyList<int> columnMetadataValues)
+        public void BuildColumnMetadataList(IReadOnlyList<ColumnType> columnTypes, IReadOnlyList<byte[]> columnMetadataValues)
         {
             var columnMetadatas = new List<ColumnMetadata>(ColumnNames.Count);
 
@@ -98,7 +98,7 @@ namespace SciSharp.MySQL.Replication
                     Name = ColumnNames[i],
                     Type = columnType,
                     CharsetId = ColumnCharsets != null ? ColumnCharsets[i] : 0,
-                    MetadataValue = (ushort)columnMetadataValues[i]
+                    MetadataValue = columnMetadataValues[i]
                 };
                 
                 columnMetadatas.Add(columnMetadata);

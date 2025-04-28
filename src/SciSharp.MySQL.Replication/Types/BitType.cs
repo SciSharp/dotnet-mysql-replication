@@ -21,8 +21,8 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>An object representing the MySQL BIT value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            int meta = columnMetadata.MetadataValue;
-            int bitArrayLength = (meta >> 8) * 8 + (meta & 0xFF);
+            byte meta = columnMetadata.MetadataValue[0];
+            int bitArrayLength = (meta >> 8) * 8 + meta;
             return reader.ReadBitArray(bitArrayLength, false);
         }
     }

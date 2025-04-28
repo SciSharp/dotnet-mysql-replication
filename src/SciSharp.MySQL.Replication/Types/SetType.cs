@@ -14,7 +14,7 @@ namespace SciSharp.MySQL.Replication.Types
     {
         public void LoadMetadataValue(ColumnMetadata columnMetadata)
         {
-            columnMetadata.MaxLength = columnMetadata.MetadataValue & 0xFF;
+            columnMetadata.MaxLength = columnMetadata.MetadataValue[1];
         }
 
         /// <summary>

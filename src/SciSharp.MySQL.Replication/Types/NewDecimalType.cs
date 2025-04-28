@@ -27,8 +27,8 @@ namespace SciSharp.MySQL.Replication.Types
         {
             var decimalOptions = new DecimalOptions
             {
-                Precision = columnMetadata.MetadataValue & 0xFF,
-                Scale = columnMetadata.MetadataValue >> 8
+                Precision = (int)columnMetadata.MetadataValue[0],
+                Scale = (int)columnMetadata.MetadataValue[1]
             };
 
             // Calculate storage size (MySQL packs 9 digits into 4 bytes)

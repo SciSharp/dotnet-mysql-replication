@@ -21,7 +21,7 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>A byte array representing the MySQL GEOMETRY value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            int meta = columnMetadata.MetadataValue;
+            int meta = columnMetadata.MetadataValue[0];
             int blobLength = reader.ReadInteger(meta);
 
             try

@@ -44,7 +44,7 @@ namespace SciSharp.MySQL.Replication.Events
         /// <summary>
         /// Gets or sets the array of metadata for each column.
         /// </summary>
-        public int[] ColumnMetadata { get; set; }        
+        public byte[][] ColumnMetadata { get; set; }        
         
         /// <summary>
         /// Gets or sets the bitmap of columns that can be null.
@@ -78,6 +78,8 @@ namespace SciSharp.MySQL.Replication.Events
         /// <param name="context">The context for decoding.</param>
         protected internal override void DecodeBody(ref SequenceReader<byte> reader, object context)
         {
+            var repState = (ReplicationState)context;
+
             TableID = reader.ReadLong(6);
 
             reader.Advance(2); // skip flags
@@ -91,15 +93,22 @@ namespace SciSharp.MySQL.Replication.Events
             reader.TryRead(out len);
             TableName = reader.ReadString(len);
 
+            if (!repState.TableSchemaMap.TryGetValue($"{SchemaName}.{TableName}", out var tableSchema))
+            {
+                throw new Exception($"Table {SchemaName}.{TableName} not found in schema map.");
+            }
+
             reader.TryRead(out len);// 0x00
 
             ColumnCount = (int)reader.ReadLengthEncodedInteger();
             ColumnTypes = reader.Sequence.Slice(reader.Consumed, ColumnCount).ToArray();
             reader.Advance(ColumnCount);
 
-            reader.ReadLengthEncodedInteger();
+            var columnMetadataValuesLength = reader.ReadLengthEncodedInteger();
 
-            ColumnMetadata = ReadColumnMetadata(ref reader, ColumnTypes);
+            var metadataReader = new SequenceReader<byte>(reader.Sequence.Slice(reader.Consumed, columnMetadataValuesLength));
+            ColumnMetadata = ReadColumnMetadata(ref metadataReader, ColumnTypes, tableSchema);
+            reader.Advance(columnMetadataValuesLength);
             
             NullBitmap = reader.ReadBitArray(ColumnCount);
 
@@ -122,10 +131,7 @@ namespace SciSharp.MySQL.Replication.Events
                 }
             }
 
-            if (context is ReplicationState repState)
-            {
-                repState.TableMap[TableID] = this;
-            }
+            repState.TableMap[TableID] = this;
         }
 
         /// <summary>
@@ -142,13 +148,16 @@ namespace SciSharp.MySQL.Replication.Events
         /// </summary>
         /// <param name="reader">The sequence reader containing the binary data.</param>
         /// <param name="columnTypes">The array of column types.</param>
+        /// <param name="tableSchema">The schema of the table.</param>
         /// <returns>An array of metadata for each column.</returns>
-        private int[] ReadColumnMetadata(ref SequenceReader<byte> reader, byte[] columnTypes)
+        private byte[][] ReadColumnMetadata(ref SequenceReader<byte> reader, byte[] columnTypes, TableSchema tableSchema)
         {
-            var columnMetadata = new int[columnTypes.Length];
+            var columnMetadata = new byte[columnTypes.Length][];
 
             for (int i = 0; i < columnTypes.Length; i++)
             {
+                var columnSchema = tableSchema.Columns[i];
+
                 switch((ColumnType)columnTypes[i])
                 {
                     case ColumnType.FLOAT:
@@ -156,31 +165,45 @@ namespace SciSharp.MySQL.Replication.Events
                     case ColumnType.BLOB:
                     case ColumnType.JSON:
                     case ColumnType.GEOMETRY:
-                        columnMetadata[i] = (int)reader.ReadLong(1);
+                        columnMetadata[i] = ReadColumnMetadataValue(ref reader, 1);
+                        break;
+                    case ColumnType.VARCHAR:
+                        columnMetadata[i] = ReadColumnMetadataValue(ref reader, columnSchema.ColumnSize < 256 ? 1 : 2);
                         break;
                     case ColumnType.BIT:
-                    case ColumnType.VARCHAR:
                     case ColumnType.NEWDECIMAL:
-                        columnMetadata[i] = (int)reader.ReadLong(2);
-                        break;
                     case ColumnType.SET:
                     case ColumnType.ENUM:
                     case ColumnType.STRING:
-                        reader.TryReadBigEndian(out short value);
-                        columnMetadata[i] = (int)value;
+                        columnMetadata[i] = ReadColumnMetadataValue(ref reader, 2);
                         break;
                     case ColumnType.TIME_V2:
                     case ColumnType.DATETIME_V2:
                     case ColumnType.TIMESTAMP_V2:
-                        columnMetadata[i] = (int)reader.ReadLong(1);
+                        columnMetadata[i] = ReadColumnMetadataValue(ref reader, 1);
                         break;
                     default:
-                        columnMetadata[i] = 0;
                         break;
                 }
             }
 
             return columnMetadata;
+        }
+
+        private byte[] ReadColumnMetadataValue(ref SequenceReader<byte> reader, int size)
+        {
+            if (size == 1)
+                return [reader.TryRead(out var b0) ? b0 : (byte)0];
+
+            if (size == 2)
+            {
+                reader.TryRead(out var b0);
+                reader.TryRead(out var b1);
+
+                return [b0, b1];
+            }
+
+            throw new Exception($"Unsupported column metadata size: {size}");
         }
 
         /// <summary>

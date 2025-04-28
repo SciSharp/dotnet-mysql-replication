@@ -1,13 +1,16 @@
 ﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using System.Reflection;
 using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
-using SuperSocket.Connection;
-using SuperSocket.Client;
 using SciSharp.MySQL.Replication.Events;
+using SuperSocket.Client;
+using SuperSocket.Connection;
 
 namespace SciSharp.MySQL.Replication
 {
@@ -40,6 +43,8 @@ namespace SciSharp.MySQL.Replication
             set { base.Logger = value; }
         }
 
+        private readonly Dictionary<string, TableSchema> _tableSchemaMap;
+
         static ReplicationClient()
         {
             LogEventPackageDecoder.RegisterEmptyPayloadEventTypes(
@@ -68,9 +73,15 @@ namespace SciSharp.MySQL.Replication
         /// Initializes a new instance of the <see cref="ReplicationClient"/> class.
         /// </summary>
         public ReplicationClient()
-            : base(new LogEventPipelineFilter())
+            : this(new LogEventPipelineFilter())
         {
             
+        }
+
+        private ReplicationClient(LogEventPipelineFilter logEventPipelineFilter)
+            : base(logEventPipelineFilter)
+        {
+            _tableSchemaMap = (logEventPipelineFilter.Context as ReplicationState).TableSchemaMap;
         }
 
         /// <summary>
@@ -104,7 +115,7 @@ namespace SciSharp.MySQL.Replication
 
             try
             {
-                await mysqlConn.OpenAsync();
+                await mysqlConn.OpenAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -117,16 +128,18 @@ namespace SciSharp.MySQL.Replication
 
             try
             {
-                var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn);
+                await LoadDatabaseSchemaAsync(mysqlConn).ConfigureAwait(false);
+                
+                var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn).ConfigureAwait(false);
 
-                var binlogChecksum = await GetBinlogChecksum(mysqlConn);
-                await ConfirmChecksum(mysqlConn);
+                var binlogChecksum = await GetBinlogChecksum(mysqlConn).ConfigureAwait(false);
+                await ConfirmChecksum(mysqlConn).ConfigureAwait(false);
                 LogEvent.ChecksumType = binlogChecksum;
 
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
                 _serverId = serverId;
 
-                await StartDumpBinlog(_stream, serverId, binlogInfo.Item1, binlogInfo.Item2);
+                await StartDumpBinlog(_stream, serverId, binlogInfo.Item1, binlogInfo.Item2).ConfigureAwait(false);
 
                 _connection = mysqlConn;
 
@@ -143,7 +156,7 @@ namespace SciSharp.MySQL.Replication
             }
             catch (Exception e)
             {
-                await mysqlConn.CloseAsync();
+                await mysqlConn.CloseAsync().ConfigureAwait(false);
                 
                 return new LoginResult
                 {
@@ -151,6 +164,50 @@ namespace SciSharp.MySQL.Replication
                     Message = e.Message
                 };
             }
+        }
+
+        private async Task LoadDatabaseSchemaAsync(MySqlConnection mysqlConn)
+        {
+            var tableSchemaTable = await mysqlConn.GetSchemaAsync("Columns").ConfigureAwait(false);
+
+            var systemDatabases = new HashSet<string>(
+                new [] { "mysql", "information_schema", "performance_schema", "sys" },
+                StringComparer.OrdinalIgnoreCase);
+
+            var userDatabaseColumns = tableSchemaTable.Rows.OfType<DataRow>()
+                .Where(row => !systemDatabases.Contains(row.ItemArray[1].ToString()))
+                .ToArray();
+
+            userDatabaseColumns.Select(row =>
+                {
+                    var columnSizeCell = row["CHARACTER_MAXIMUM_LENGTH"];
+                
+                    return new {
+                        TableName = row["TABLE_NAME"].ToString(),
+                        DatabaseName = row["TABLE_SCHEMA"].ToString(),
+                        ColumnName = row["COLUMN_NAME"].ToString(),
+                        ColumnType = row["DATA_TYPE"].ToString(),
+                        ColumnSize = columnSizeCell == DBNull.Value ? 0 : Convert.ToUInt64(columnSizeCell),
+                    };
+                })
+                .GroupBy(row => new { row.TableName, row.DatabaseName })
+                .ToList()
+                .ForEach(group =>
+                {
+                    var tableSchema = new TableSchema
+                    {
+                        TableName = group.Key.TableName,
+                        DatabaseName = group.Key.DatabaseName,
+                        Columns = group.Select(row => new ColumnSchema
+                        {
+                            Name = row.ColumnName,
+                            DataType = row.ColumnType,
+                            ColumnSize = row.ColumnSize
+                        }).ToList()
+                    };
+
+                    _tableSchemaMap[$"{group.Key.DatabaseName}.{group.Key.TableName}"] = tableSchema;
+                });
         }
 
         /// <summary>
@@ -164,7 +221,7 @@ namespace SciSharp.MySQL.Replication
             var cmd = mysqlConn.CreateCommand();
             cmd.CommandText = "SHOW MASTER STATUS;";
             
-            using (var reader = await cmd.ExecuteReaderAsync())
+            using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
             {
                 if (!await reader.ReadAsync())
                     throw new Exception("No binlog information has been returned.");
@@ -172,7 +229,7 @@ namespace SciSharp.MySQL.Replication
                 var fileName = reader.GetString(0);
                 var position = reader.GetInt32(1);
 
-                await reader.CloseAsync();
+                await reader.CloseAsync().ConfigureAwait(false);
 
                 return new Tuple<string, int>(fileName, position);
             }
@@ -190,11 +247,11 @@ namespace SciSharp.MySQL.Replication
             
             using (var reader = await cmd.ExecuteReaderAsync())
             {
-                if (!await reader.ReadAsync())
+                if (!await reader.ReadAsync().ConfigureAwait(false))
                     return ChecksumType.NONE;
 
                 var checksumTypeName = reader.GetString(1).ToUpper();
-                await reader.CloseAsync();
+                await reader.CloseAsync().ConfigureAwait(false);
 
                 return (ChecksumType)Enum.Parse(typeof(ChecksumType), checksumTypeName);
             }
@@ -209,7 +266,7 @@ namespace SciSharp.MySQL.Replication
         {
             var cmd = mysqlConn.CreateCommand();
             cmd.CommandText = "set @`master_binlog_checksum` = @@binlog_checksum;";        
-            await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -269,8 +326,8 @@ namespace SciSharp.MySQL.Replication
         private async ValueTask StartDumpBinlog(Stream stream, int serverId, string fileName, int position)
         {
             var data = GetDumpBinlogCommand(serverId, fileName, position);
-            await stream.WriteAsync(data);
-            await stream.FlushAsync();
+            await stream.WriteAsync(data).ConfigureAwait(false);
+            await stream.FlushAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -307,10 +364,10 @@ namespace SciSharp.MySQL.Replication
             if (connection != null)
             {
                 _connection = null;
-                await connection.CloseAsync();
+                await connection.CloseAsync().ConfigureAwait(false);
             }
 
-            await base.CloseAsync();
+            await base.CloseAsync().ConfigureAwait(false);
         }
     }
 }

@@ -21,7 +21,7 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>A DateTime object representing the MySQL DATETIME2 value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            int meta = columnMetadata.MetadataValue;
+            int meta = columnMetadata.MetadataValue[0];
             /*
             (in big endian)
             1 bit sign (1= non-negative, 0= negative)

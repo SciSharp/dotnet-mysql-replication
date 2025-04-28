@@ -21,7 +21,7 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>A DateTime object representing the MySQL TIMESTAMP2 value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            int meta = columnMetadata.MetadataValue;
+            int meta = columnMetadata.MetadataValue[0];
             var millis = (long)reader.ReadBigEndianInteger(4);
             var fsp = ReadFractionalSeconds(ref reader, meta);
             var ticks = millis * 1000 + fsp / 1000;

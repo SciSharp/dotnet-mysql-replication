@@ -26,9 +26,9 @@ namespace SciSharp.MySQL.Replication.Events
             if (columnMetadata.Type != ColumnType.STRING)
                 return false;
             
-            var meta0 = columnMetadata.MetadataValue >> 8;
+            var meta0 = columnMetadata.MetadataValue[0];
             
-            if (meta0 != (int)ColumnType.ENUM)
+            if (meta0 != (byte)ColumnType.ENUM)
                 return false;
 
             columnMetadata.UnderlyingType = ColumnType.ENUM;
