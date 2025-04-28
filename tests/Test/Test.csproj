@@ -15,4 +15,9 @@
   <ItemGroup>
     <ProjectReference Include="../../src/SciSharp.MySQL.Replication/SciSharp.MySQL.Replication.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
