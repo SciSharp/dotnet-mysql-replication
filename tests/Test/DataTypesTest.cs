@@ -119,7 +119,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestDoubleType()
         {
             var currentValue = 123456.789012;

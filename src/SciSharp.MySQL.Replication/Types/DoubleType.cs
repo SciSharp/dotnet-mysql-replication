@@ -21,7 +21,13 @@ namespace SciSharp.MySQL.Replication.Types
         /// <returns>A double value representing the MySQL DOUBLE value.</returns>
         public object ReadValue(ref SequenceReader<byte> reader, ColumnMetadata columnMetadata)
         {
-            return BitConverter.Int64BitsToDouble(reader.ReadLong(8));
+            // MySQL stores DOUBLE values in IEEE 754 double-precision format (8 bytes)
+            // Read the 8 bytes in big-endian order
+            Span<byte> buffer = stackalloc byte[8];
+            reader.TryCopyTo(buffer);
+            reader.Advance(8);
+            
+            return BitConverter.ToDouble(buffer);
         }
     }
 }
