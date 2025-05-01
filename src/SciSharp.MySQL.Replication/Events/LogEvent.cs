@@ -74,6 +74,7 @@ namespace SciSharp.MySQL.Replication.Events
             DataTypes[(int)ColumnType.TIMESTAMP_V2] = new TimestampV2Type();
             DataTypes[(int)ColumnType.ENUM] = new EnumType();
             DataTypes[(int)ColumnType.SET] = new SetType();
+            DataTypes[(int)ColumnType.BLOB] = new BlobType();
         }
 
         /// <summary>
