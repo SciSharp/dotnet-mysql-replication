@@ -18,10 +18,10 @@
     </Description>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IncludeReleaseNotes)' == 'true'">
-    <PackageReadmeFile>v$(Version).md</PackageReadmeFile>
+    <PackageReadmeFile>v$(PackageVersion).md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup Condition="'$(IncludeReleaseNotes)' == 'true'">
-    <None Include="../../ReleaseNotes/v$(Version).md" Pack="true" PackagePath="/" />
+    <None Include="../../ReleaseNotes/v$(PackageVersion).md" Pack="true" PackagePath="/" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="8.4.0" />
