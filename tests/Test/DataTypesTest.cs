@@ -139,7 +139,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestTimeType()
         {
             var currentValue = new TimeSpan(10, 30, 45);
