@@ -16,8 +16,10 @@
     <Description>
       dotnet-mysql-replication is a C# Implementation of MySQL replication protocol client. This allows you to receive events like insert, update, delete with their data and raw SQL queries from MySQL.
     </Description>
+    <PackageReadmeFile>v$(Version).md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="../../ReleaseNotes/v$(Version).md" Pack="true" PackagePath="/" />
     <PackageReference Include="MySql.Data" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="SuperSocket.Client" Version="2.0.0" />
