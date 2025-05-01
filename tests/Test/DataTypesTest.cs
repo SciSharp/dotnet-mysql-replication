@@ -149,7 +149,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestTimestampType()
         {
             var currentValue = DateTime.UtcNow;
