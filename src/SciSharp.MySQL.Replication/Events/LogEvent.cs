@@ -76,6 +76,7 @@ namespace SciSharp.MySQL.Replication.Events
             DataTypes[(int)ColumnType.SET] = new SetType();
             DataTypes[(int)ColumnType.BLOB] = new BlobType();
             DataTypes[(int)ColumnType.YEAR] = new YearType();
+            DataTypes[(int)ColumnType.JSON] = new JsonType();
         }
 
         /// <summary>
