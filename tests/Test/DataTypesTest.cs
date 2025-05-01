@@ -208,7 +208,7 @@ namespace Test
             });
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestYearType()
         {
             var currentValue = 2023;

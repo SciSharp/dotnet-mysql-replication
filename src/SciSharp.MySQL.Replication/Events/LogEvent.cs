@@ -75,6 +75,7 @@ namespace SciSharp.MySQL.Replication.Events
             DataTypes[(int)ColumnType.ENUM] = new EnumType();
             DataTypes[(int)ColumnType.SET] = new SetType();
             DataTypes[(int)ColumnType.BLOB] = new BlobType();
+            DataTypes[(int)ColumnType.YEAR] = new YearType();
         }
 
         /// <summary>
