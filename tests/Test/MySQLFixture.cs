@@ -13,21 +13,29 @@ namespace Test
         internal const string Username = "root";
         internal const string Password = "root";
 
+        private readonly int _serverId;
+
         public IReplicationClient Client { get; private set; }
 
         private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        public static MySQLFixture Instance { get; } = new MySQLFixture();
+        public static MySQLFixture Instance { get; } = new MySQLFixture(1);
 
-        private MySQLFixture()
+        internal static MySQLFixture CreateMySQLFixture(int serverId)
         {
+            return new MySQLFixture(serverId);
+        }
+
+        private MySQLFixture(int serverId)
+        {
+            this._serverId = serverId;
             Client = new ReplicationClient();
             ConnectAsync().Wait();
         }
 
         private async Task ConnectAsync()
         {
-            await Client.ConnectAsync(Host, Username, Password, 1);
+            await Client.ConnectAsync(Host, Username, Password, _serverId);
         }
 
         private MySqlConnection GetConnection()

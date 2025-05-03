@@ -141,21 +141,23 @@ namespace Test
             }
         }
 
-        //[Fact]
+        [Fact]
         public async Task TestGetEventLogStream()
         {
+            var mysqlFixture = MySQLFixture.CreateMySQLFixture(3);
+
             // Insert a new pet
-            var cmd = _mysqlFixture.CreateCommand();
+            var cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death) values ('Buddy', 'Alex', 'dog', 'M', '2020-01-15', NULL); SELECT LAST_INSERT_ID();";
             var id = (UInt64)(await cmd.ExecuteScalarAsync());
 
             // Update the pet
-            cmd = _mysqlFixture.CreateCommand();
+            cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = $"UPDATE pet SET owner='Sarah' WHERE id={id}";
             await cmd.ExecuteNonQueryAsync();
 
             // Delete the pet
-            cmd = _mysqlFixture.CreateCommand();
+            cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = $"DELETE FROM pet WHERE id={id}";
             await cmd.ExecuteNonQueryAsync();
 
@@ -166,7 +168,7 @@ namespace Test
             var sawDelete = false;
 
             // Process only the next 5 events (or fewer if we reach the end)
-            await foreach (var logEvent in _mysqlFixture.Client.GetEventLogStream())
+            await foreach (var logEvent in mysqlFixture.Client.GetEventLogStream())
             {
                 eventCount++;
                 _outputHelper.WriteLine($"Event type: {logEvent.EventType}");
