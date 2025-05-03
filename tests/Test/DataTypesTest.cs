@@ -7,20 +7,12 @@ using MySql.Data.MySqlClient;
 using SciSharp.MySQL.Replication;
 using SciSharp.MySQL.Replication.Events;
 using Xunit;
-using Xunit.Abstractions;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
-using System.Collections;
-using System.Data;
-using System.Globalization;
 
 namespace Test
 {
     [Trait("Category", "DataTypes")]
     public class DataTypesTest
     {
-        private readonly MySQLFixture _mysqlFixture = MySQLFixture.Instance;
-
         [Fact]
         public async Task TestDateTimeType()
         {
@@ -220,14 +212,16 @@ namespace Test
 
         private async Task TestDataType<TDateType>(string tableName, TDateType currentValue, TDateType updateValue, Func<MySqlDataReader, int, TDateType> dataReader)
         {
+            var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+            
             // Insert a new row into the table
-            var command = _mysqlFixture.CreateCommand();
+            var command = mysqlFixture.CreateCommand();
             command.CommandText = $"insert into {tableName} (value) values (@value);SELECT LAST_INSERT_ID();";
             command.Parameters.AddWithValue("@value", currentValue);
             var id = (Int32)(UInt64)await command.ExecuteScalarAsync();
 
             // Validate the WriteRowsEvent
-            var writeRowsEvent = await _mysqlFixture.ReceiveAsync<WriteRowsEvent>();
+            var writeRowsEvent = await mysqlFixture.ReceiveAsync<WriteRowsEvent>();
 
             Assert.Equal(1, writeRowsEvent.RowSet.Rows.Count);
             Assert.Equal("id", writeRowsEvent.RowSet.ColumnNames[0]);
@@ -239,7 +233,7 @@ namespace Test
             Assert.Equal(currentValue, (TDateType)valueFromClient);
 
             // Validate the data in the database with query
-            command = _mysqlFixture.CreateCommand();
+            command = mysqlFixture.CreateCommand();
             command.CommandText = $"select value from {tableName} where id = @id";
             command.Parameters.AddWithValue("@id", id);
 
@@ -253,7 +247,7 @@ namespace Test
             Assert.Equal(currentValue, savedValue);
 
             // Update the row
-            command = _mysqlFixture.CreateCommand();
+            command = mysqlFixture.CreateCommand();
             command.CommandText = $"update {tableName} set value=@value where id = @id";
             command.Parameters.AddWithValue("@id", id);
             command.Parameters.AddWithValue("@value", updateValue);
@@ -261,7 +255,7 @@ namespace Test
             Assert.Equal(1, await command.ExecuteNonQueryAsync());
 
             // Validate the UpdateRowsEvent
-            var updateRowsEvent = await _mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
+            var updateRowsEvent = await mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
             Assert.Equal(1, updateRowsEvent.RowSet.Rows.Count);
             Assert.Equal("id", updateRowsEvent.RowSet.ColumnNames[0]); 
             Assert.Equal("value", updateRowsEvent.RowSet.ColumnNames[1]);
@@ -275,14 +269,14 @@ namespace Test
             Assert.Equal(updateValue, valueCellValue.NewValue);
 
             // Delete the row
-            command = _mysqlFixture.CreateCommand();
+            command = mysqlFixture.CreateCommand();
             command.CommandText = $"delete from {tableName} where id = @id";
             command.Parameters.AddWithValue("@id", id);
 
             await command.ExecuteNonQueryAsync();
 
             // Validate the DeleteRowsEvent
-            var deleteRowsEvent = await _mysqlFixture.ReceiveAsync<DeleteRowsEvent>();
+            var deleteRowsEvent = await mysqlFixture.ReceiveAsync<DeleteRowsEvent>();
             Assert.Equal(1, deleteRowsEvent.RowSet.Rows.Count);
             Assert.Equal("id", deleteRowsEvent.RowSet.ColumnNames[0]);
             Assert.Equal("value", deleteRowsEvent.RowSet.ColumnNames[1]);

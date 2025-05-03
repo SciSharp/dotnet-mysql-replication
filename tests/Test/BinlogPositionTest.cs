@@ -12,14 +12,11 @@ namespace Test
     [Trait("Category", "Replication")]
     public class BinlogPositionTest
     {
-        private readonly MySQLFixture _mysqlFixture;
         protected readonly ITestOutputHelper _outputHelper;
 
         public BinlogPositionTest(ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
-            _mysqlFixture = MySQLFixture.Instance;
-            using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         }
 
         // Unit tests for BinlogPosition class
@@ -98,13 +95,15 @@ namespace Test
         [Fact]
         public async Task GetCurrentBinlogPosition_ReturnsValidPosition()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+
             // Execute a simple command to ensure we have binlog activity
-            var cmd = _mysqlFixture.CreateCommand();
+            var cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "SELECT 1";
             await cmd.ExecuteScalarAsync();
             
             // Get the current binlog position
-            var client = _mysqlFixture.Client;
+            var client = mysqlFixture.Client;
             var currentPosition = client.CurrentPosition;
             
             // Assert
@@ -117,18 +116,20 @@ namespace Test
         [Fact]
         public async Task BinlogPosition_ShouldAdvanceAfterOperations()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+
             // Get the current binlog position to use as reference
-            var client = _mysqlFixture.Client;
+            var client = mysqlFixture.Client;
             var initialPosition = client.CurrentPosition;
             _outputHelper.WriteLine($"Initial binlog position: {initialPosition}");
             
             // Execute an operation to advance binlog position
-            var cmd = _mysqlFixture.CreateCommand();
+            var cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "INSERT INTO pet (name, owner, species) VALUES ('TestPet', 'TestOwner', 'TestSpecies')";
             await cmd.ExecuteNonQueryAsync();
             
             // Receive an event to ensure binlog has progressed
-            var eventLog = await _mysqlFixture.ReceiveAsync<WriteRowsEvent>();
+            var eventLog = await mysqlFixture.ReceiveAsync<WriteRowsEvent>();
             Assert.NotNull(eventLog);
             
             // Check that position has advanced
@@ -147,8 +148,10 @@ namespace Test
         [Fact]
         public async Task PositionChanged_EventFires_WhenPositionChanges()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+
             // Set up event handler to detect position changes
-            var client = _mysqlFixture.Client;
+            var client = mysqlFixture.Client;
             var positionChangedEvent = new ManualResetEventSlim(false);
             BinlogPosition capturedPosition = null;
             
@@ -162,11 +165,11 @@ namespace Test
             try
             {
                 // Execute an operation that will trigger binlog position change
-                var cmd = _mysqlFixture.CreateCommand();
+                var cmd = mysqlFixture.CreateCommand();
                 cmd.CommandText = "INSERT INTO pet (name, owner, species) VALUES ('EventTest', 'EventOwner', 'EventSpecies')";
                 await cmd.ExecuteNonQueryAsync();
 
-                await _mysqlFixture.ReceiveAsync<WriteRowsEvent>();
+                await mysqlFixture.ReceiveAsync<WriteRowsEvent>();
 
                 // Wait for the position changed event to fire
                 var eventFired = positionChangedEvent.Wait(TimeSpan.FromSeconds(5));
@@ -186,18 +189,20 @@ namespace Test
         [Fact]
         public async Task RotateEvent_UpdatesBinlogPosition()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+
             // Force a log rotation
-            var cmd = _mysqlFixture.CreateCommand();
+            var cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "FLUSH LOGS";
             await cmd.ExecuteNonQueryAsync();
             
             // We should receive a rotate event
-            var rotateEvent = await _mysqlFixture.ReceiveAsync<RotateEvent>();
+            var rotateEvent = await mysqlFixture.ReceiveAsync<RotateEvent>();
             Assert.NotNull(rotateEvent);
             _outputHelper.WriteLine($"Received rotate event with next log: {rotateEvent.NextBinlogFileName} at position: {rotateEvent.RotatePosition}");
             
             // Get current position after rotation
-            var currentPosition = _mysqlFixture.Client.CurrentPosition;
+            var currentPosition = mysqlFixture.Client.CurrentPosition;
             _outputHelper.WriteLine($"Current binlog position after rotation: {currentPosition}");
             
             // The rotate event's next binlog file name should match our current filename
@@ -207,8 +212,10 @@ namespace Test
         [Fact]
         public async Task ConnectWithBinlogPosition_ShouldStartFromSpecifiedPosition()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+
             // First get the current position from our existing connection to use as reference
-            var currentPosition = _mysqlFixture.Client.CurrentPosition;
+            var currentPosition = mysqlFixture.Client.CurrentPosition;
             _outputHelper.WriteLine($"Current binlog position: {currentPosition}");
             
             // Create a new replication client
@@ -235,7 +242,7 @@ namespace Test
                 _outputHelper.WriteLine($"Successfully connected with position: {newClient.CurrentPosition}");
                 
                 // Now insert a record to generate a new event
-                var cmd = _mysqlFixture.CreateCommand();
+                var cmd = mysqlFixture.CreateCommand();
                 cmd.CommandText = "INSERT INTO pet (name, owner, species) VALUES ('PositionTest', 'PositionTestOwner', 'PositionTestSpecies')";
                 await cmd.ExecuteNonQueryAsync();
                 

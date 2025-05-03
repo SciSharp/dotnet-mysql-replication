@@ -19,9 +19,7 @@ namespace Test
 
         private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        public static MySQLFixture Instance { get; } = new MySQLFixture(1);
-
-        internal static MySQLFixture CreateMySQLFixture(int serverId)
+        internal static MySQLFixture CreateMySQLFixture(int serverId = 1)
         {
             return new MySQLFixture(serverId);
         }

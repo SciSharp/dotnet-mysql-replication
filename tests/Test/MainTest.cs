@@ -15,46 +15,42 @@ namespace Test
     [Trait("Category", "Replication")]
     public class MainTest
     {
-        private readonly MySQLFixture _mysqlFixture = MySQLFixture.Instance;
-
         protected readonly ITestOutputHelper _outputHelper;
-
-        private readonly ILogger _logger;
 
         public MainTest(ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
-            using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-            _logger = loggerFactory.CreateLogger<MainTest>();
         }
 
         [Fact]
         public async Task TestReceiveEvent()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+
             // insert
-            var cmd = _mysqlFixture.CreateCommand();
+            var cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death) values ('Rokie', 'Kerry', 'abc', 'F', '1982-04-20', '3000-01-01'); SELECT LAST_INSERT_ID();";
             var id = (UInt64)(await cmd.ExecuteScalarAsync());
 
             // update
-            cmd = _mysqlFixture.CreateCommand();
+            cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "update pet set owner='Linda' where `id`=" + id;
             await cmd.ExecuteNonQueryAsync();
 
             // delete
-            cmd = _mysqlFixture.CreateCommand();
+            cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "delete from pet where `id`= " + id;
             await cmd.ExecuteNonQueryAsync();
 
-            RowsEvent eventLog = await _mysqlFixture.ReceiveAsync<WriteRowsEvent>();
+            RowsEvent eventLog = await mysqlFixture.ReceiveAsync<WriteRowsEvent>();
             Assert.NotNull(eventLog);
             _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
 
-            eventLog = await _mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
+            eventLog = await mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
             Assert.NotNull(eventLog);
             _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
 
-            eventLog = await _mysqlFixture.ReceiveAsync<DeleteRowsEvent>();
+            eventLog = await mysqlFixture.ReceiveAsync<DeleteRowsEvent>();
             Assert.NotNull(eventLog);
             _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
         }
@@ -62,12 +58,14 @@ namespace Test
         [Fact]
         public async Task TestInsertEvent()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+            
             // insert
-            var cmd = _mysqlFixture.CreateCommand();
+            var cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death, timeUpdated) values ('Rokie', 'Kerry', 'abc', 'F', '1992-05-20', '3000-01-01', now()); SELECT LAST_INSERT_ID();";
             var id = (UInt64)(await cmd.ExecuteScalarAsync());
 
-            var eventLog = await _mysqlFixture.ReceiveAsync<WriteRowsEvent>();
+            var eventLog = await mysqlFixture.ReceiveAsync<WriteRowsEvent>();
 
             Assert.NotNull(eventLog);
 
@@ -85,13 +83,15 @@ namespace Test
         [Fact]
         public async Task TestUpdateEvent()
         {
+            using var mysqlFixture = MySQLFixture.CreateMySQLFixture();
+            
             // insert
-            var cmd = _mysqlFixture.CreateCommand();
+            var cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death, timeUpdated) values ('Rokie', 'Kerry', 'abc', 'F', '1992-05-20', '3000-01-01', now());";
             await cmd.ExecuteNonQueryAsync();
 
             // query
-            cmd = _mysqlFixture.CreateCommand();
+            cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "select * from pet order by `id` desc limit 1;";
 
             var oldValues = new Dictionary<string, object>();
@@ -111,11 +111,11 @@ namespace Test
             var id = oldValues["id"];
 
             // update
-            cmd = _mysqlFixture.CreateCommand();
+            cmd = mysqlFixture.CreateCommand();
             cmd.CommandText = "update pet set owner='Linda', timeUpdated=now() where `id`=" + id;
             await cmd.ExecuteNonQueryAsync();
 
-            var eventLog = await _mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
+            var eventLog = await mysqlFixture.ReceiveAsync<UpdateRowsEvent>();
 
             _outputHelper.WriteLine(eventLog.ToString() + "\r\n");
             
@@ -144,7 +144,7 @@ namespace Test
         [Fact]
         public async Task TestGetEventLogStream()
         {
-            var mysqlFixture = MySQLFixture.CreateMySQLFixture(3);
+            var mysqlFixture = MySQLFixture.CreateMySQLFixture();
 
             // Insert a new pet
             var cmd = mysqlFixture.CreateCommand();
