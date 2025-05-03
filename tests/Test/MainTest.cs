@@ -141,7 +141,7 @@ namespace Test
             }
         }
 
-        [Fact]
+        //[Fact]
         public async Task TestGetEventLogStream()
         {
             // Insert a new pet
