@@ -140,5 +140,94 @@ namespace Test
                 Assert.Equal("Linda", cellValue.NewValue);
             }
         }
+
+        [Fact]
+        public async Task TestGetEventLogStream()
+        {
+            // Insert a new pet
+            var cmd = _mysqlFixture.CreateCommand();
+            cmd.CommandText = "INSERT INTO pet (name, owner, species, sex, birth, death) values ('Buddy', 'Alex', 'dog', 'M', '2020-01-15', NULL); SELECT LAST_INSERT_ID();";
+            var id = (UInt64)(await cmd.ExecuteScalarAsync());
+
+            // Update the pet
+            cmd = _mysqlFixture.CreateCommand();
+            cmd.CommandText = $"UPDATE pet SET owner='Sarah' WHERE id={id}";
+            await cmd.ExecuteNonQueryAsync();
+
+            // Delete the pet
+            cmd = _mysqlFixture.CreateCommand();
+            cmd.CommandText = $"DELETE FROM pet WHERE id={id}";
+            await cmd.ExecuteNonQueryAsync();
+
+            // Use the client's GetEventLogStream to process events
+            var eventCount = 0;
+            var sawInsert = false;
+            var sawUpdate = false;
+            var sawDelete = false;
+
+            // Process only the next 5 events (or fewer if we reach the end)
+            await foreach (var logEvent in _mysqlFixture.Client.GetEventLogStream())
+            {
+                eventCount++;
+                _outputHelper.WriteLine($"Event type: {logEvent.EventType}");
+
+                switch (logEvent)
+                {
+                    case WriteRowsEvent writeEvent:
+                        _outputHelper.WriteLine($"INSERT event on table ID: {writeEvent.TableID}");
+                        var insertRows = writeEvent.RowSet.ToReadableRows();
+                        if (insertRows.Count > 0)
+                        {
+                            var petName = insertRows[0]["name"]?.ToString();
+                            if (petName == "Buddy")
+                            {
+                                sawInsert = true;
+                                _outputHelper.WriteLine($"Found INSERT for pet 'Buddy'");
+                            }
+                        }
+                        break;
+                        
+                    case UpdateRowsEvent updateEvent:
+                        _outputHelper.WriteLine($"UPDATE event on table ID: {updateEvent.TableID}");
+                        var updateRows = updateEvent.RowSet.ToReadableRows();
+                        if (updateRows.Count > 0)
+                        {
+                            var cellValue = updateRows[0]["owner"] as CellValue;
+                            if (cellValue?.NewValue?.ToString() == "Sarah")
+                            {
+                                sawUpdate = true;
+                                _outputHelper.WriteLine($"Found UPDATE with new owner 'Sarah'");
+                            }
+                        }
+                        break;
+                        
+                    case DeleteRowsEvent deleteEvent:
+                        _outputHelper.WriteLine($"DELETE event on table ID: {deleteEvent.TableID}");
+                        var deleteRows = deleteEvent.RowSet.ToReadableRows();
+                        if (deleteRows.Count > 0)
+                        {
+                            // For DELETE events, check if this might be our deleted pet
+                            sawDelete = true;
+                            _outputHelper.WriteLine($"Found DELETE event");
+                        }
+                        break;
+                        
+                    case QueryEvent queryEvent:
+                        _outputHelper.WriteLine($"SQL Query: {queryEvent.Query}");
+                        break;
+                }
+
+                // Exit the loop once we've seen all three events or processed 10 events
+                if ((sawInsert && sawUpdate && sawDelete) || eventCount >= 20)
+                {
+                    break;
+                }
+            }
+
+            // Assert that we saw all the events we expected
+            Assert.True(sawInsert, "Should have seen INSERT event");
+            Assert.True(sawUpdate, "Should have seen UPDATE event");
+            Assert.True(sawDelete, "Should have seen DELETE event");
+        }
     }
 }

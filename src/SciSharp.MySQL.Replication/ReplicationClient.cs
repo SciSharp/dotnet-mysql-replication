@@ -34,6 +34,18 @@ namespace SciSharp.MySQL.Replication
 
         private Stream _stream;
 
+        private BinlogPosition _currentPosition;
+        
+        /// <summary>
+        /// Gets the current binary log position.
+        /// </summary>
+        public BinlogPosition CurrentPosition => new BinlogPosition(_currentPosition);
+
+        /// <summary>
+        /// Event triggered when the binary log position changes.
+        /// </summary>
+        public event EventHandler<BinlogPosition> PositionChanged;
+
         /// <summary>
         /// Gets or sets the logger for the replication client.
         /// </summary>
@@ -109,8 +121,38 @@ namespace SciSharp.MySQL.Replication
         /// <returns>A task representing the asynchronous operation, with a result indicating whether the login was successful.</returns>
         public async Task<LoginResult> ConnectAsync(string server, string username, string password, int serverId)
         {
-            var connString = $"Server={server}; UID={username}; Password={password}";
+            return await ConnectInternalAsync(server, username, password, serverId, null).ConfigureAwait(false);
+        }
 
+        /// <summary>
+        /// Connects to a MySQL server with the specified credentials and starts replication from a specific binlog position.
+        /// </summary>
+        /// <param name="server">The server address to connect to.</param>
+        /// <param name="username">The username for authentication.</param>
+        /// <param name="password">The password for authentication.</param>
+        /// <param name="serverId">The server ID to use for the replication client.</param>
+        /// <param name="binlogPosition">The binary log position to start replicating from.</param>
+        /// <returns>A task that represents the asynchronous login operation and contains the login result.</returns>
+        public async Task<LoginResult> ConnectAsync(string server, string username, string password, int serverId, BinlogPosition binlogPosition)
+        {
+            if (binlogPosition == null)
+                throw new ArgumentNullException(nameof(binlogPosition));
+
+            return await ConnectInternalAsync(server, username, password, serverId, binlogPosition).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Internal implementation of the connection logic for MySQL replication.
+        /// </summary>
+        /// <param name="server">The server address.</param>
+        /// <param name="username">The username for authentication.</param>
+        /// <param name="password">The password for authentication.</param>
+        /// <param name="serverId">The server ID.</param>
+        /// <param name="binlogPosition">Optional binlog position to start from. If null, will use the current position from the server.</param>
+        /// <returns>A task representing the asynchronous operation, with a result indicating whether the login was successful.</returns>
+        private async Task<LoginResult> ConnectInternalAsync(string server, string username, string password, int serverId, BinlogPosition binlogPosition)
+        {
+            var connString = $"Server={server}; UID={username}; Password={password}";
             var mysqlConn = new MySqlConnection(connString);
 
             try
@@ -128,28 +170,40 @@ namespace SciSharp.MySQL.Replication
 
             try
             {
+                // Load database schema using the established connection
                 await LoadDatabaseSchemaAsync(mysqlConn).ConfigureAwait(false);
-                
-                var binlogInfo = await GetBinlogFileNameAndPosition(mysqlConn).ConfigureAwait(false);
 
+                // If no binlog position was provided, get the current position from the server
+                if (binlogPosition == null)
+                {
+                    binlogPosition = await GetBinlogFileNameAndPosition(mysqlConn).ConfigureAwait(false);
+                }
+                
+                // Set up checksum verification
                 var binlogChecksum = await GetBinlogChecksum(mysqlConn).ConfigureAwait(false);
                 await ConfirmChecksum(mysqlConn).ConfigureAwait(false);
                 LogEvent.ChecksumType = binlogChecksum;
 
+                // Get the underlying stream and start the binlog dump
                 _stream = GetStreamFromMySQLConnection(mysqlConn);
                 _serverId = serverId;
+                _currentPosition = new BinlogPosition(binlogPosition);
 
-                await StartDumpBinlog(_stream, serverId, binlogInfo.Item1, binlogInfo.Item2).ConfigureAwait(false);
+                await StartDumpBinlog(_stream, serverId, binlogPosition.Filename, binlogPosition.Position).ConfigureAwait(false);
 
                 _connection = mysqlConn;
 
+                // Create a connection for the event stream
                 var connection = new StreamPipeConnection(
                     stream: _stream,
                     remoteEndPoint: null,
                     options: new ConnectionOptions
-                        {
-                            Logger = Logger
-                        });
+                    {
+                        Logger = Logger
+                    });
+                
+                // We no longer need to register the PackageHandler event
+                // as we're overriding OnPackageReceived instead
 
                 SetupConnection(connection);
                 return new LoginResult { Result = true };
@@ -163,6 +217,53 @@ namespace SciSharp.MySQL.Replication
                     Result = false,
                     Message = e.Message
                 };
+            }
+        }
+
+        /// <summary>
+        /// Override of the OnPackageReceived method to track binlog position changes
+        /// </summary>
+        /// <param name="package">The log event package received</param>
+        /// <returns>A ValueTask representing the asynchronous operation</returns>
+        protected override ValueTask OnPackageReceived(LogEvent package)
+        {
+            // Track position for events coming through the event pipeline
+            TrackBinlogPosition(package);
+            
+            // Call base implementation to allow normal event handling
+            return base.OnPackageReceived(package);
+        }
+        
+        /// <summary>
+        /// Updates the position tracking based on the received log event.
+        /// </summary>
+        /// <param name="logEvent">The log event to process for position tracking.</param>
+        /// <returns>True if the position was updated, false otherwise.</returns>
+        private void TrackBinlogPosition(LogEvent logEvent)
+        {
+            if (logEvent == null || _currentPosition == null)
+                return;
+
+            if (logEvent is RotateEvent rotateEvent)
+            {
+                // For rotate events, we need to create a new position with the new filename                
+                _currentPosition = new BinlogPosition(
+                    rotateEvent.NextBinlogFileName,
+                    (int)rotateEvent.RotatePosition);
+                
+                PositionChanged?.Invoke(this, _currentPosition);
+            }
+            else 
+            {
+                // For other events, just update the position number without creating a new object
+                int newPos = logEvent.Position + logEvent.EventSize;
+                
+                if (_currentPosition.Position != newPos)
+                {
+                    // Only update if position has actually changed
+                    _currentPosition.Position = newPos;
+                    PositionChanged?.Invoke(this, _currentPosition);
+                }
             }
         }
 
@@ -216,7 +317,7 @@ namespace SciSharp.MySQL.Replication
         /// </summary>
         /// <param name="mysqlConn">The MySQL connection.</param>
         /// <returns>A tuple containing the binary log file name and position.</returns>
-        private async Task<Tuple<string, int>> GetBinlogFileNameAndPosition(MySqlConnection mysqlConn)
+        private async Task<BinlogPosition> GetBinlogFileNameAndPosition(MySqlConnection mysqlConn)
         {
             var cmd = mysqlConn.CreateCommand();
             cmd.CommandText = "SHOW MASTER STATUS;";
@@ -231,7 +332,7 @@ namespace SciSharp.MySQL.Replication
 
                 await reader.CloseAsync().ConfigureAwait(false);
 
-                return new Tuple<string, int>(fileName, position);
+                return new BinlogPosition(fileName, position);
             }
         }
 
@@ -348,9 +449,34 @@ namespace SciSharp.MySQL.Replication
         /// Receives a log event asynchronously.
         /// </summary>
         /// <returns>The received log event.</returns>
-        public new ValueTask<LogEvent> ReceiveAsync()
+        public new async ValueTask<LogEvent> ReceiveAsync()
         {
-            return base.ReceiveAsync();
+            var logEvent = await base.ReceiveAsync();
+            
+            // Update position tracking for events received directly through ReceiveAsync
+            if (logEvent != null)
+            {
+                TrackBinlogPosition(logEvent);
+            }
+            
+            return logEvent;
+        }
+
+        /// <summary>
+        /// Asynchronously streams log events from the server.
+        /// This method will yield log events as they are received.
+        /// </summary>
+        public async IAsyncEnumerable<LogEvent> GetEventLogStream()
+        {
+            while (true)
+            {
+                var logEvent = await ReceiveAsync();
+
+                if (logEvent == null)
+                    break;
+
+                yield return logEvent;
+            }
         }
 
         /// <summary>

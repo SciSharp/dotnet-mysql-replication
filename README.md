@@ -4,7 +4,9 @@
 [![MyGet Version](https://img.shields.io/myget/scisharp/vpre/SciSharp.MySQL.Replication)](https://www.myget.org/feed/scisharp/package/nuget/SciSharp.MySQL.Replication)
 [![NuGet Version](https://img.shields.io/nuget/v/SciSharp.MySQL.Replication.svg?style=flat)](https://www.nuget.org/packages/SciSharp.MySQL.Replication/)
 
-dotnet-mysql-replication is a C# Implementation of MySQL replication protocol client. This allows you to receive events like insert, update, delete with their data and raw SQL queries from MySQL.
+A C# Implementation of MySQL replication protocol client
+
+This library allows you to receive events like insert, update, delete with their data and raw SQL queries from MySQL.
 
 ## Features
 
@@ -21,6 +23,8 @@ dotnet-mysql-replication is a C# Implementation of MySQL replication protocol cl
 - Checksum verification support
 - Built-in support for MySQL binary format parsing
 - Async/await first design
+- Track and save binary log position 
+- Start replication from a specific binary log position
 
 ## Requirements
 
@@ -67,6 +71,79 @@ client.StartReceive();
 await client.CloseAsync();
 ```
 
+## Using Async Stream API
+
+You can use the modern C# async stream pattern to process MySQL events using `GetEventLogStream()`:
+
+```csharp
+using SciSharp.MySQL.Replication;
+using SciSharp.MySQL.Replication.Events;
+
+var client = new ReplicationClient();
+var result = await client.ConnectAsync("localhost", "root", "password", 1);
+
+if (!result.Result)
+{
+    Console.WriteLine($"Failed to connect: {result.Message}.");
+    return;
+}
+
+// Process events as they arrive using await foreach
+await foreach (var logEvent in client.GetEventLogStream())
+{
+    switch (logEvent)
+    {
+        case WriteRowsEvent writeEvent:
+            Console.WriteLine($"INSERT on table: {writeEvent.TableId}");
+            break;
+            
+        case UpdateRowsEvent updateEvent:
+            Console.WriteLine($"UPDATE on table: {updateEvent.TableId}");
+            break;
+            
+        case QueryEvent queryEvent:
+            Console.WriteLine($"SQL Query: {queryEvent.Query}");
+            break;
+            
+        // Handle other event types as needed
+    }
+}
+
+await client.CloseAsync();
+```
+
+This approach is useful for:
+- Modern C# applications using .NET Core 3.0+
+- Processing events sequentially in a more fluent, readable way
+- Easier integration with async/await patterns
+- Avoiding event handler callback complexity
+
+## Position Tracking and Custom Starting Position
+
+You can track the current binary log position and start from a specific position:
+
+```csharp
+using SciSharp.MySQL.Replication;
+
+var client = new ReplicationClient();
+
+// Track position changes
+client.PositionChanged += (sender, position) =>
+{
+    Console.WriteLine($"Current position: {position}");
+    // Save position to a file, database, etc.
+    File.WriteAllText("binlog-position.txt", $"{position.Filename}:{position.Position}");
+};
+
+// Start from a specific position
+var startPosition = new BinlogPosition("mysql-bin.000001", 4);
+var result = await client.ConnectAsync("localhost", "root", "password", 1, startPosition);
+
+// Get current position at any time
+var currentPosition = client.CurrentPosition;
+Console.WriteLine($"Current log file: {currentPosition.Filename}, position: {currentPosition.Position}");
+```
+
 ## Advanced Usage
 
 ### Working with Specific Events
@@ -104,7 +181,6 @@ client.PackageHandler += (s, e) =>
                 {
                     Console.WriteLine($"    Column: {cell.ColumnIndex}, Value: {cell.Value}");
                 }
-                
                 Console.WriteLine("  After update:");
                 foreach (var cell in row.AfterUpdate)
                 {
@@ -127,7 +203,12 @@ client.PackageHandler += (s, e) =>
             
         case QueryEvent queryEvent:
             Console.WriteLine($"SQL Query: {queryEvent.Query}");
-            Console.WriteLine($"Database: {queryEvent.DatabaseName}");
+            Console.WriteLine($"Database: {queryEvent.Schema}");
+            break;
+
+        case RotateEvent rotateEvent:
+            Console.WriteLine($"Rotating to new binary log: {rotateEvent.NextBinlogFileName}");
+            Console.WriteLine($"New position: {rotateEvent.RotatePosition}");
             break;
     }
 };

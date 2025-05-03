@@ -9,9 +9,9 @@ namespace Test
 {
     public class MySQLFixture : IDisposable
     {
-        private const string _host = "localhost";
-        private const string _username = "root";
-        private const string _password = "root";
+        internal const string Host = "localhost";
+        internal const string Username = "root";
+        internal const string Password = "root";
 
         public IReplicationClient Client { get; private set; }
 
@@ -27,12 +27,12 @@ namespace Test
 
         private async Task ConnectAsync()
         {
-            await Client.ConnectAsync(_host, _username, _password, 1);
+            await Client.ConnectAsync(Host, Username, Password, 1);
         }
 
         private MySqlConnection GetConnection()
         {
-            var connection = new MySqlConnection($"Server={_host};Database=garden;Uid={_username};Pwd={_password};");
+            var connection = new MySqlConnection($"Server={Host};Database=garden;Uid={Username};Pwd={Password};");
             connection.OpenAsync().Wait();
             return connection;
         }
