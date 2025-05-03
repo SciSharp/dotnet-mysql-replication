@@ -18,7 +18,7 @@ namespace SciSharp.MySQL.Replication
     /// A client that implements MySQL replication protocol to act as a replica.
     /// This allows reading binary log events from a MySQL server in real-time.
     /// </summary>
-    public class ReplicationClient : EasyClient<LogEvent>, IReplicationClient
+    public class ReplicationClient : EasyClient<LogEvent>, IReplicationClient, IAsyncDisposable, IDisposable
     {
         private const byte CMD_DUMP_BINLOG = 0x12;
 
@@ -494,6 +494,18 @@ namespace SciSharp.MySQL.Replication
             }
 
             await base.CloseAsync().ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async ValueTask DisposeAsync()
+        {
+            await CloseAsync();
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            CloseAsync().AsTask().Wait();
         }
     }
 }
