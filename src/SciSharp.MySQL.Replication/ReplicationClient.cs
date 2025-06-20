@@ -7,8 +7,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MySql.Data.MySqlClient;
 using SciSharp.MySQL.Replication.Events;
+using SciSharp.MySQL.Replication.Protocol;
 using SuperSocket.Client;
 using SuperSocket.Connection;
 
@@ -28,7 +28,7 @@ namespace SciSharp.MySQL.Replication
 
         private const int BINLOG_SEND_ANNOTATE_ROWS_EVENT = 2;
 
-        private MySqlConnection _connection;
+        private DirectMySQLConnection _connection;
 
         private int _serverId;
 
@@ -96,20 +96,7 @@ namespace SciSharp.MySQL.Replication
             _tableSchemaMap = (logEventPipelineFilter.Context as ReplicationState).TableSchemaMap;
         }
 
-        /// <summary>
-        /// Gets the underlying stream from a MySQL connection.
-        /// </summary>
-        /// <param name="connection">The MySQL connection.</param>
-        /// <returns>The stream associated with the connection.</returns>
-        private Stream GetStreamFromMySQLConnection(MySqlConnection connection)
-        {
-            var driverField = connection.GetType().GetField("driver", BindingFlags.Instance | BindingFlags.NonPublic);
-            var driver = driverField.GetValue(connection);
-            var handlerField = driver.GetType().GetField("handler", BindingFlags.Instance | BindingFlags.NonPublic);
-            var handler = handlerField.GetValue(driver);
-            var baseStreamField = handler.GetType().GetField("baseStream", BindingFlags.Instance | BindingFlags.NonPublic);
-            return baseStreamField.GetValue(handler) as Stream;
-        }
+
 
         /// <summary>
         /// Connects to a MySQL server as a replication client.
@@ -152,12 +139,11 @@ namespace SciSharp.MySQL.Replication
         /// <returns>A task representing the asynchronous operation, with a result indicating whether the login was successful.</returns>
         private async Task<LoginResult> ConnectInternalAsync(string server, string username, string password, int serverId, BinlogPosition binlogPosition)
         {
-            var connString = $"Server={server}; UID={username}; Password={password}";
-            var mysqlConn = new MySqlConnection(connString);
+            var directConn = new DirectMySQLConnection();
 
             try
             {
-                await mysqlConn.OpenAsync().ConfigureAwait(false);
+                await directConn.ConnectAsync(server, 3306, username, password).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -171,27 +157,27 @@ namespace SciSharp.MySQL.Replication
             try
             {
                 // Load database schema using the established connection
-                await LoadDatabaseSchemaAsync(mysqlConn).ConfigureAwait(false);
+                await LoadDatabaseSchemaAsync(directConn).ConfigureAwait(false);
 
                 // If no binlog position was provided, get the current position from the server
                 if (binlogPosition == null)
                 {
-                    binlogPosition = await GetBinlogFileNameAndPosition(mysqlConn).ConfigureAwait(false);
+                    binlogPosition = await GetBinlogFileNameAndPosition(directConn).ConfigureAwait(false);
                 }
                 
                 // Set up checksum verification
-                var binlogChecksum = await GetBinlogChecksum(mysqlConn).ConfigureAwait(false);
-                await ConfirmChecksum(mysqlConn).ConfigureAwait(false);
+                var binlogChecksum = await GetBinlogChecksum(directConn).ConfigureAwait(false);
+                await ConfirmChecksum(directConn).ConfigureAwait(false);
                 LogEvent.ChecksumType = binlogChecksum;
 
                 // Get the underlying stream and start the binlog dump
-                _stream = GetStreamFromMySQLConnection(mysqlConn);
+                _stream = directConn.Stream;
                 _serverId = serverId;
                 _currentPosition = new BinlogPosition(binlogPosition);
 
                 await StartDumpBinlog(_stream, serverId, binlogPosition.Filename, binlogPosition.Position).ConfigureAwait(false);
 
-                _connection = mysqlConn;
+                _connection = directConn;
 
                 // Create a connection for the event stream
                 var connection = new StreamPipeConnection(
@@ -210,7 +196,7 @@ namespace SciSharp.MySQL.Replication
             }
             catch (Exception e)
             {
-                await mysqlConn.CloseAsync().ConfigureAwait(false);
+                directConn.Dispose();
                 
                 return new LoginResult
                 {
@@ -267,30 +253,32 @@ namespace SciSharp.MySQL.Replication
             }
         }
 
-        private async Task LoadDatabaseSchemaAsync(MySqlConnection mysqlConn)
+        private async Task LoadDatabaseSchemaAsync(DirectMySQLConnection directConn)
         {
-            var tableSchemaTable = await mysqlConn.GetSchemaAsync("Columns").ConfigureAwait(false);
+            var query = @"SELECT 
+                            TABLE_SCHEMA,
+                            TABLE_NAME,
+                            COLUMN_NAME,
+                            DATA_TYPE,
+                            CHARACTER_MAXIMUM_LENGTH
+                          FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA NOT IN ('mysql', 'information_schema', 'performance_schema', 'sys')";
 
-            var systemDatabases = new HashSet<string>(
-                new [] { "mysql", "information_schema", "performance_schema", "sys" },
-                StringComparer.OrdinalIgnoreCase);
+            var result = await directConn.ExecuteQueryAsync(query).ConfigureAwait(false);
+            
+            if (!result.IsSuccess || result.Rows == null)
+                return;
 
-            var userDatabaseColumns = tableSchemaTable.Rows.OfType<DataRow>()
-                .Where(row => !systemDatabases.Contains(row.ItemArray[1].ToString()))
-                .ToArray();
+            var userDatabaseColumns = result.Rows.Select(row => new
+            {
+                TableName = row.Values[1],
+                DatabaseName = row.Values[0],
+                ColumnName = row.Values[2],
+                ColumnType = row.Values[3],
+                ColumnSize = string.IsNullOrEmpty(row.Values[4]) ? 0UL : Convert.ToUInt64(row.Values[4])
+            }).ToArray();
 
-            userDatabaseColumns.Select(row =>
-                {
-                    var columnSizeCell = row["CHARACTER_MAXIMUM_LENGTH"];
-                
-                    return new {
-                        TableName = row["TABLE_NAME"].ToString(),
-                        DatabaseName = row["TABLE_SCHEMA"].ToString(),
-                        ColumnName = row["COLUMN_NAME"].ToString(),
-                        ColumnType = row["DATA_TYPE"].ToString(),
-                        ColumnSize = columnSizeCell == DBNull.Value ? 0 : Convert.ToUInt64(columnSizeCell),
-                    };
-                })
+            userDatabaseColumns
                 .GroupBy(row => new { row.TableName, row.DatabaseName })
                 .ToList()
                 .ForEach(group =>
@@ -315,59 +303,46 @@ namespace SciSharp.MySQL.Replication
         /// Retrieves the binary log file name and position from the MySQL server.
         /// https://dev.mysql.com/doc/refman/5.6/en/replication-howto-masterstatus.html
         /// </summary>
-        /// <param name="mysqlConn">The MySQL connection.</param>
+        /// <param name="directConn">The direct MySQL connection.</param>
         /// <returns>A tuple containing the binary log file name and position.</returns>
-        private async Task<BinlogPosition> GetBinlogFileNameAndPosition(MySqlConnection mysqlConn)
+        private async Task<BinlogPosition> GetBinlogFileNameAndPosition(DirectMySQLConnection directConn)
         {
-            var cmd = mysqlConn.CreateCommand();
-            cmd.CommandText = "SHOW MASTER STATUS;";
+            var result = await directConn.ExecuteQueryAsync("SHOW MASTER STATUS").ConfigureAwait(false);
             
-            using (var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
-            {
-                if (!await reader.ReadAsync())
-                    throw new Exception("No binlog information has been returned.");
+            if (!result.IsSuccess || result.Rows == null || result.Rows.Count == 0)
+                throw new Exception("No binlog information has been returned.");
 
-                var fileName = reader.GetString(0);
-                var position = reader.GetInt32(1);
+            var firstRow = result.Rows[0];
+            var fileName = firstRow.Values[0];
+            var position = int.Parse(firstRow.Values[1]);
 
-                await reader.CloseAsync().ConfigureAwait(false);
-
-                return new BinlogPosition(fileName, position);
-            }
+            return new BinlogPosition(fileName, position);
         }
 
         /// <summary>
         /// Retrieves the binary log checksum type from the MySQL server.
         /// </summary>
-        /// <param name="mysqlConn">The MySQL connection.</param>
+        /// <param name="directConn">The direct MySQL connection.</param>
         /// <returns>The checksum type.</returns>
-        private async Task<ChecksumType> GetBinlogChecksum(MySqlConnection mysqlConn)
+        private async Task<ChecksumType> GetBinlogChecksum(DirectMySQLConnection directConn)
         {
-            var cmd = mysqlConn.CreateCommand();
-            cmd.CommandText = "show global variables like 'binlog_checksum';";
+            var result = await directConn.ExecuteQueryAsync("show global variables like 'binlog_checksum'").ConfigureAwait(false);
             
-            using (var reader = await cmd.ExecuteReaderAsync())
-            {
-                if (!await reader.ReadAsync().ConfigureAwait(false))
-                    return ChecksumType.NONE;
+            if (!result.IsSuccess || result.Rows == null || result.Rows.Count == 0)
+                return ChecksumType.NONE;
 
-                var checksumTypeName = reader.GetString(1).ToUpper();
-                await reader.CloseAsync().ConfigureAwait(false);
-
-                return (ChecksumType)Enum.Parse(typeof(ChecksumType), checksumTypeName);
-            }
+            var checksumTypeName = result.Rows[0].Values[1].ToUpper();
+            return (ChecksumType)Enum.Parse(typeof(ChecksumType), checksumTypeName);
         }
         
         /// <summary>
         /// Confirms the binary log checksum setting on the MySQL server.
         /// </summary>
-        /// <param name="mysqlConn">The MySQL connection.</param>
+        /// <param name="directConn">The direct MySQL connection.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        private async ValueTask ConfirmChecksum(MySqlConnection mysqlConn)
+        private async ValueTask ConfirmChecksum(DirectMySQLConnection directConn)
         {
-            var cmd = mysqlConn.CreateCommand();
-            cmd.CommandText = "set @`master_binlog_checksum` = @@binlog_checksum;";        
-            await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await directConn.ExecuteQueryAsync("set @`master_binlog_checksum` = @@binlog_checksum").ConfigureAwait(false);
         }
 
         /// <summary>
@@ -490,7 +465,7 @@ namespace SciSharp.MySQL.Replication
             if (connection != null)
             {
                 _connection = null;
-                await connection.CloseAsync().ConfigureAwait(false);
+                connection.Dispose();
             }
 
             await base.CloseAsync().ConfigureAwait(false);
